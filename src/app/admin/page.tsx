@@ -368,13 +368,17 @@ export default function AdminPage() {
     const viewScreenshot = (src: string) => {
       Swal.fire({
         title: "পেমেন্ট স্ক্রিনশট",
-        html: `<img src="${src}" alt="Payment Screenshot" style="max-width:100%;max-height:70vh;border-radius:12px;" />`,
+        imageUrl: src,
+        imageAlt: "Payment Screenshot",
+        imageWidth: 400,
+        imageHeight: "auto",
         showCloseButton: true,
         showConfirmButton: false,
-        width: "90%",
+        width: 460,
         customClass: {
           popup: "!rounded-2xl !shadow-2xl !bg-slate-900",
           title: "!text-white !text-sm !font-bold",
+          image: "!rounded-xl !max-h-[60vh] !object-contain",
         },
       })
     }

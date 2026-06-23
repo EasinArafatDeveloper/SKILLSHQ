@@ -1,13 +1,13 @@
 import nodemailer from "nodemailer"
 
-const EMAIL_USER = "mdeasinarafat016456@gmail.com"
-const EMAIL_PASS = "hbme swmn cssf xied"
+const EMAIL_USER = process.env.EMAIL_USER || ""
+const EMAIL_PASS = (process.env.EMAIL_PASS || "").replace(/\s/g, "")
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: EMAIL_USER,
-    pass: EMAIL_PASS.replace(/\s/g, ""), // remove spaces from app password
+    pass: EMAIL_PASS,
   },
 })
 

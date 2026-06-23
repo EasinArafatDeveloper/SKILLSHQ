@@ -4,6 +4,8 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "env": {
-    "MONGODB_URI": "@mongodb-uri"
+    "MONGODB_URI": "@mongodb-uri",
+    "EMAIL_USER": "@email-user",
+    "EMAIL_PASS": "@email-pass"
   }
 }
