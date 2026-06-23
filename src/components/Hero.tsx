@@ -60,28 +60,20 @@ export default function Hero() {
                     : {}
                 }
               >
-                {/* Background overlay */}
+                {/* Light overlay for play button visibility */}
                 {hasThumbnail ? (
-                  <div className="absolute inset-0 bg-black/50 backdrop-brightness-50"></div>
+                  <div className="absolute inset-0 bg-black/20"></div>
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800"></div>
                 )}
-                <div className="relative z-10 space-y-4">
+                {/* Centered Play Button Only - No Text */}
+                <div className="absolute inset-0 flex items-center justify-center z-10">
                   <button
                     onClick={() => setShowVideo(true)}
-                    className="w-16 h-16 md:w-20 md:h-20 bg-amber-500/10 border-2 border-amber-400 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-amber-500/10 animate-pulse-slow cursor-pointer hover:scale-110 hover:bg-amber-500/20 transition-all duration-300"
+                    className="w-16 h-16 md:w-20 md:h-20 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-all duration-300 cursor-pointer"
                   >
-                    <i className="fa-solid fa-play text-amber-400 text-2xl md:text-3xl ml-1"></i>
+                    <i className="fa-solid fa-play text-amber-500 text-2xl md:text-3xl ml-1"></i>
                   </button>
-                  <span className="block text-[11px] uppercase tracking-widest text-amber-400 font-bold">
-                    ভিডিও গাইড ও ইন্ট্রো
-                  </span>
-                  <h3 className="text-base md:text-2xl font-bold text-white">
-                    {videoTitle}
-                  </h3>
-                  <p className="text-xs text-slate-300 max-w-md mx-auto hidden sm:block">
-                    ১০টি হাই-পেইড কোর্স এবং মেগা সফটওয়্যার কালেকশন একই ড্রাইভ ফোল্ডারে সাজানো আছে।
-                  </p>
                 </div>
               </div>
             </div>

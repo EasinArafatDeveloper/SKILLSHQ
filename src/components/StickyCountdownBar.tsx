@@ -101,13 +101,13 @@ export default function StickyCountdownBar() {
             {/* Price Badge */}
             <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur px-3 py-1 rounded-full">
               <span className="text-[10px] line-through text-white/60">৳১,২০,০০০</span>
-              <span className="text-sm font-black">মাত্র ৳৬৫০!</span>
+              <span className="text-sm font-black text-red-300">মাত্র ৳৬৫০!</span>
             </div>
 
             {/* CTA */}
             <a
               href="#checkout-section"
-              className="bg-white text-amber-600 font-extrabold px-5 py-1.5 rounded-full text-xs hover:bg-amber-50 transition shadow-lg inline-flex items-center gap-1.5"
+              className="bg-red-500 text-white font-extrabold px-5 py-1.5 rounded-full text-xs hover:bg-red-600 transition shadow-lg inline-flex items-center gap-1.5"
             >
               <i className="fa-solid fa-bolt"></i>
               এখনই কিনুন

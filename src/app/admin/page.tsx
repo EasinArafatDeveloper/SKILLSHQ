@@ -1047,14 +1047,58 @@ export default function AdminPage() {
   function VideoSettings() {
     if (!settings) return null
     const [draft, setDraft] = useState({ url: "", title: "", thumb: "" })
-    useEffect(() => { setDraft({ url: settings.videoUrl || "", title: settings.videoTitle || "", thumb: settings.videoThumbnail || "" }) }, [settings?.videoUrl, settings?.videoTitle, settings?.videoThumbnail])
-    const hasThumb = draft.thumb.length > 5
+    useEffect(() => {
+      setDraft({ url: settings.videoUrl || "", title: settings.videoTitle || "", thumb: settings.videoThumbnail || "" })
+    }, [settings?.videoUrl, settings?.videoTitle, settings?.videoThumbnail])
+
+    // Auto-extract YouTube video ID
+    const extractYoutubeId = (url: string) => {
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([^&?#\s]+)/,
+        /youtube\.com\/shorts\/([^&?#\s]+)/
+      ]
+      for (const p of patterns) {
+        const match = url.match(p)
+        if (match) return match[1]
+      }
+      return null
+    }
+
+    const ytId = extractYoutubeId(draft.url)
+    const autoThumb = ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : ""
+    const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}` : ""
+    // Use manual thumb, or auto, or fallback to hqdefault
+    const finalThumb = draft.thumb || autoThumb || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : "")
+    const hasThumb = finalThumb.length > 5
+
+    // Show thumbnail in a modal
+    const viewThumb = () => {
+      if (!finalThumb) return
+      Swal.fire({
+        imageUrl: finalThumb,
+        imageAlt: "থাম্বনেইল",
+        title: draft.title || "ভিডিও থাম্বনেইল",
+        showCloseButton: true,
+        showConfirmButton: false,
+        width: "90%",
+        customClass: {
+          popup: "!rounded-2xl !shadow-2xl !bg-slate-900",
+          title: "!text-white !text-sm !font-bold",
+        },
+      })
+    }
+
     const save = async () => {
-      const updated = { ...settings, videoUrl: draft.url, videoTitle: draft.title, videoThumbnail: draft.thumb }; setSettings(updated); setSettingsSaving(true)
+      // Auto-set thumbnail from YouTube if not manually provided
+      const thumbToSave = draft.thumb || autoThumb || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : "")
+      const updated = { ...settings, videoUrl: draft.url, videoTitle: draft.title, videoThumbnail: thumbToSave }
+      setSettings(updated)
+      setSettingsSaving(true)
       try { await updateSettings(updated); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
       catch { showToast('সেটিংস সেভ করতে সমস্যা হয়েছে!', 'error') }
       finally { setSettingsSaving(false) }
     }
+
     return (
       <div className="space-y-5 max-w-2xl">
         <div>
@@ -1066,30 +1110,110 @@ export default function AdminPage() {
             <label className="block text-xs font-bold text-slate-700 mb-1.5">ভিডিও টাইটেল</label>
             <input type="text" value={draft.title}
               onChange={e => setDraft({ ...draft, title: e.target.value })}
+              placeholder="যেমন: কিভাবে এই বান্ডেল আপনার লাইফ পরিবর্তন করতে পারে?"
               className="w-full border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">ভিডিও URL (YouTube বা ডিরেক্ট লিংক)</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              ভিডিও URL (YouTube লিংক দিন)
+            </label>
             <input type="text" value={draft.url}
               onChange={e => setDraft({ ...draft, url: e.target.value })}
+              placeholder="https://youtu.be/xxxxxxxxxxx  বা  https://youtube.com/watch?v=xxx"
               className="w-full border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            {ytId && (
+              <p className="text-[10px] text-emerald-600 mt-1 flex items-center gap-1">
+                <i className="fa-brands fa-youtube"></i> YouTube ভিডিও ডিটেক্ট হয়েছে — সেভ করলেই থাম্বনেইল অটো সেভ হবে
+              </p>
+            )}
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">থাম্বনেইল (ইমেজ URL)</label>
-            <input type="text" value={draft.thumb}
-              onChange={e => setDraft({ ...draft, thumb: e.target.value })}
-              className="w-full border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-            {hasThumb && <div className="mt-3 rounded-lg overflow-hidden border"><img src={draft.thumb} alt="Preview" className="w-full aspect-video object-cover" /></div>}
-          </div>
-          {draft.url ? (
-            <div className="bg-slate-900 rounded-lg p-4 text-center space-y-2">
-              <p className="text-[10px] text-amber-400 font-bold uppercase">প্রিভিউ</p>
-              <p className="text-white font-bold text-sm">{draft.title}</p>
-              <div className="w-12 h-12 bg-amber-500/20 border-2 border-amber-400 rounded-full flex items-center justify-center mx-auto"><i className="fa-solid fa-play text-amber-400"></i></div>
+
+          {/* Thumbnail Preview */}
+          {hasThumb && (
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-700">
+                থাম্বনেইল {ytId && !draft.thumb ? <span className="text-emerald-600 font-normal">(YouTube থেকে অটো)</span> : ""}
+              </label>
+              <div className="relative rounded-xl overflow-hidden border border-slate-200 cursor-pointer group" onClick={viewThumb}>
+                <img
+                  src={finalThumb}
+                  alt="Video Thumbnail"
+                  className="w-full aspect-video object-cover"
+                  onError={(e) => {
+                    // Fallback if maxresdefault doesn't exist
+                    const target = e.currentTarget
+                    if (ytId && !target.dataset.retried) {
+                      target.dataset.retried = "1"
+                      target.src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
+                    }
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition flex items-center justify-center">
+                  <div className="w-12 h-12 bg-white/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-lg">
+                    <i className="fa-solid fa-magnifying-glass-plus text-slate-700"></i>
+                  </div>
+                </div>
+              </div>
+              <p className="text-[9px] text-slate-400">থাম্বনেইলে ক্লিক করে বড় করে দেখুন</p>
             </div>
-          ) : (
-            <div className="bg-slate-100 rounded-lg p-4 text-center"><i className="fa-solid fa-video-slash text-slate-300 text-2xl block mb-1"></i><p className="text-[10px] text-slate-400">এখনো কোনো ভিডিও সেট করা হয়নি</p></div>
           )}
+
+          {/* YouTube Embed Preview */}
+          {embedUrl ? (
+            <div className="space-y-2">
+              <p className="text-[10px] text-amber-600 font-bold uppercase flex items-center gap-1">
+                <i className="fa-solid fa-play"></i> ভিডিও প্রিভিউ
+              </p>
+              <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-700">
+                <div className="aspect-video">
+                  <iframe
+                    src={embedUrl + "?autoplay=0&rel=0"}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full border-0"
+                    title={draft.title}
+                  />
+                </div>
+                <div className="p-3">
+                  <p className="text-white font-bold text-xs">{draft.title || "ভিডিও প্রিভিউ"}</p>
+                </div>
+              </div>
+            </div>
+          ) : draft.url ? (
+            /* Non-YouTube URL: show thumbnail preview */
+            hasThumb ? (
+              <div className="space-y-2">
+                <p className="text-[10px] text-amber-600 font-bold uppercase flex items-center gap-1">
+                  <i className="fa-solid fa-image"></i> থাম্বনেইল প্রিভিউ
+                </p>
+                <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-700">
+                  <div className="aspect-video relative" onClick={viewThumb}>
+                    <img src={finalThumb} alt="Preview" className="w-full h-full object-cover cursor-pointer" />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <div className="w-14 h-14 bg-amber-500/80 rounded-full flex items-center justify-center shadow-lg">
+                        <i className="fa-solid fa-play text-white text-xl ml-1"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-white font-bold text-xs">{draft.title || "ভিডিও প্রিভিউ"}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-100 rounded-lg p-4 text-center">
+                <i className="fa-solid fa-link text-slate-300 text-xl block mb-1"></i>
+                <p className="text-[10px] text-slate-400">থাম্বনেইল ইমেজ URL দিন</p>
+              </div>
+            )
+          ) : (
+            <div className="bg-slate-100 rounded-xl p-6 text-center border border-dashed border-slate-300">
+              <i className="fa-solid fa-video text-slate-300 text-3xl block mb-2"></i>
+              <p className="text-xs text-slate-400 font-medium">YouTube ভিডিও লিংক দিন</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">লিংক দিলেই অটো প্রিভিউ ও থাম্বনেইল দেখাবে</p>
+            </div>
+          )}
+
           <button onClick={save} disabled={settingsSaving}
             className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-2.5 rounded-lg text-sm transition shadow disabled:opacity-50">
             {settingsSaving ? "সেভ হচ্ছে..." : "ভিডিও সেটিংস সেভ করুন"}

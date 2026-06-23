@@ -25,6 +25,17 @@ export default function Courses() {
   const bundlePrice = settings?.bundlePrice || "৳৬৫০"
   const bundleRegularPrice = settings?.bundleRegularPrice || "৳১,২০,০০০"
 
+  // Calculate ACTUAL total of all course offer prices
+  const calcTotal = courses.reduce((sum, c) => {
+    // Convert Bengali digits to ASCII: ০১২৩৪৫৬৭৮৯ -> 0123456789
+    const price = (c.offerPrice || "").replace(/[০-৯]/g, (d) =>
+      String("০১২৩৪৫৬৭৮৯".indexOf(d))
+    ).replace(/[^0-9]/g, "")
+    const num = parseInt(price)
+    return sum + (isNaN(num) ? 0 : num)
+  }, 0)
+  const totalOfferSum = calcTotal > 0 ? `৳${calcTotal.toLocaleString("en-US")}` : bundleRegularPrice
+
   return (
     <section className="py-16 px-4 max-w-6xl mx-auto">
       <div className="text-center max-w-2xl mx-auto space-y-3 mb-10">
@@ -124,19 +135,28 @@ export default function Courses() {
           </div>
         )}
 
-        {/* Table CTA */}
+        {/* Table CTA - 3 Tier Pricing */}
         <div className="bg-slate-50 p-6 text-center space-y-4 border-t border-slate-200">
+          {/* Regular Total (big crossed out) */}
           <p className="text-xs md:text-sm text-slate-500">
-            আলাদা আলাদা কিনলে সর্বমোট মূল্য{" "}
+            রেগুলার সর্বমোট মূল্য{" "}
             <span className="text-slate-400 line-through font-bold">{bundleRegularPrice}+ BDT</span>
           </p>
-          <div className="flex flex-col md:flex-row justify-center items-center gap-3">
+          {/* Individual Offer Sum (calculated) */}
+          <p className="text-xs md:text-sm text-slate-500">
+            আলাদা আলাদা অফার কিনলে{" "}
+            <span className="text-slate-400 line-through font-bold">{totalOfferSum} BDT</span>
+          </p>
+          {/* Mega Bundle Offer (RED) */}
+          <div className="flex flex-col md:flex-row justify-center items-center gap-3 pt-2">
             <span className="text-xl md:text-2xl font-black text-slate-800">আজকের অল-ইন-ওয়ান মেগা অফার:</span>
-            <span className="text-3xl md:text-4xl font-black text-emerald-600 animate-pulse">মাত্র {bundlePrice} BDT!</span>
+            <span className="text-3xl md:text-4xl font-black text-red-500 animate-pulse bg-red-50 px-4 py-1 rounded-xl border border-red-200 shadow-sm">
+              মাত্র {bundlePrice} BDT!
+            </span>
           </div>
           <a
             href="#checkout-section"
-            className="inline-block bg-amber-500 hover:bg-amber-600 text-white font-extrabold px-8 py-3 rounded-lg text-sm tracking-wider transition shadow-md shadow-amber-500/10 border-b-2 border-amber-700"
+            className="inline-block bg-red-500 hover:bg-red-600 text-white font-extrabold px-8 py-3 rounded-lg text-sm tracking-wider transition shadow-md shadow-red-500/10 border-b-2 border-red-700"
           >
             এখনি পুরো বান্ডেল অর্ডার করুন
           </a>
