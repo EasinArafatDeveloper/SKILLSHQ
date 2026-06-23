@@ -1272,9 +1272,14 @@ export default function AdminPage() {
 
   // ==================== DASHBOARD LAYOUT ====================
   return (
-    <div className="min-h-screen bg-slate-100 flex">
+    <div className="min-h-screen bg-slate-100 flex relative">
+      {/* Mobile overlay when sidebar is open */}
+      {sidebarOpen && (
+        <div className="md:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setSidebarOpen(false)}></div>
+      )}
+
       {/* ===== SIDEBAR ===== */}
-      <aside className={`${sidebarOpen ? "w-64" : "w-0 md:w-16"} bg-white border-r border-slate-200 flex flex-col transition-all duration-300 overflow-hidden flex-shrink-0`}>
+      <aside className={`${sidebarOpen ? "w-64" : "w-0 md:w-16"} bg-white border-r border-slate-200 flex flex-col transition-all duration-300 overflow-hidden flex-shrink-0 ${sidebarOpen ? "fixed md:relative inset-y-0 left-0 z-50" : ""}`}>
         {/* Logo */}
         <div className={`p-4 border-b border-slate-200 ${!sidebarOpen && "md:px-2"}`}>
           <div className="flex items-center gap-2.5">
@@ -1376,7 +1381,7 @@ export default function AdminPage() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto min-w-0">
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <i className="fa-solid fa-spinner animate-spin text-3xl text-amber-500"></i>

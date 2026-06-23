@@ -38,34 +38,34 @@ export default function Header() {
       </div>
 
       {/* Main Navigation/Brand Hero */}
-      <header className="py-5 px-4 max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between border-b border-slate-200/80 gap-4 bg-[#F8FAFC]">
+      <header className="py-5 px-4 max-w-7xl mx-auto flex flex-row items-center justify-between border-b border-slate-200/80 gap-4 bg-[#F8FAFC]">
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-tr from-amber-500 to-yellow-400 p-2.5 rounded-xl shadow-md">
             <i className="fa-solid fa-graduation-cap text-white text-2xl"></i>
           </div>
           <div>
-            <h1 className="text-xl font-extrabold tracking-wider text-slate-900">
+            <h1 className="text-lg sm:text-xl font-extrabold tracking-wider text-slate-900">
               SKILLS<span className="text-amber-500">HQ</span>
             </h1>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">
+            <p className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest font-semibold">
               Premium Learning Hub
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-3 sm:gap-4 text-sm flex-shrink-0">
           {isLoggedIn ? (
             <a
               href="/dashboard"
-              className="hidden sm:inline-flex bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-5 rounded-lg transition text-xs shadow"
+              className="inline-flex bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-3 sm:px-5 rounded-lg transition text-xs shadow"
             >
-              <i className="fa-solid fa-user mr-1.5"></i> ড্যাশবোর্ড
+              <i className="fa-solid fa-user mr-1.5"></i> <span className="hidden sm:inline">ড্যাশবোর্ড</span>
             </a>
           ) : (
             <a
               href="/login"
-              className="hidden sm:inline-flex bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 px-5 rounded-lg transition text-xs"
+              className="inline-flex bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 px-3 sm:px-5 rounded-lg transition text-xs"
             >
-              <i className="fa-solid fa-right-to-bracket mr-1.5"></i> লগইন
+              <i className="fa-solid fa-right-to-bracket mr-1.5"></i> <span className="hidden sm:inline">লগইন</span>
             </a>
           )}
         </div>
