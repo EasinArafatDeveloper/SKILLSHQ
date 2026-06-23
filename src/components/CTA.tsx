@@ -1,11 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 export default function CTA() {
-  const [showModal, setShowModal] = useState(false)
+  const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
-  const [orderId, setOrderId] = useState("")
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -13,40 +13,13 @@ export default function CTA() {
     const name = (form.elements.namedItem("fullname") as HTMLInputElement)?.value.trim()
     const phone = (form.elements.namedItem("phone") as HTMLInputElement)?.value.trim()
     const email = (form.elements.namedItem("email") as HTMLInputElement)?.value.trim()
-    const paymentEl = form.elements.namedItem("payment") as RadioNodeList
-    const paymentMethod = (paymentEl?.value as string) || "bkash"
 
     if (name && phone && email) {
       setSubmitting(true)
-      try {
-        const res = await fetch("/api/registrations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name,
-            phone,
-            email,
-            paymentMethod,
-            amount: "৳৬৫০",
-            status: "completed",
-          }),
-        })
-        const data = await res.json()
-        setOrderId(data._id?.slice(-8).toUpperCase() || "SHQ-" + Date.now().toString(36).toUpperCase())
-        setShowModal(true)
-      } catch {
-        setOrderId("SHQ-" + Date.now().toString(36).toUpperCase())
-        setShowModal(true)
-      } finally {
-        setSubmitting(false)
-      }
+      // Redirect to checkout page with user data
+      const params = new URLSearchParams({ name, phone, email })
+      router.push(`/checkout?${params.toString()}`)
     }
-  }
-
-  const closeModal = () => {
-    setShowModal(false)
-    const form = document.getElementById("orderForm") as HTMLFormElement
-    if (form) form.reset()
   }
 
   return (
@@ -106,24 +79,6 @@ export default function CTA() {
                   <span className="text-[10px] text-slate-400 block mt-1">এই ইমেইলেই আপনার ড্রাইভ ফোল্ডারের অ্যাক্সেস পাঠানো হবে।</span>
                 </div>
 
-                <div className="pt-2">
-                  <h5 className="text-xs text-slate-600 mb-3 font-bold flex items-center gap-1.5">
-                    <i className="fa-solid fa-credit-card text-amber-500"></i> ২. পেমেন্ট অপশন নির্বাচন করুন
-                  </h5>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label className="border-2 border-amber-500 bg-amber-500/5 p-3 rounded-lg flex flex-col items-center justify-center gap-1.5 cursor-pointer relative transition">
-                      <input type="radio" name="payment" value="bkash" defaultChecked className="absolute top-2 right-2 accent-amber-500" />
-                      <span className="text-xs font-bold text-slate-900">বিকাশ / নগদ (bKash/Nagad)</span>
-                      <span className="text-[10px] text-slate-500">ইনস্ট্যান্ট স্বয়ংক্রিয় পেমেন্ট</span>
-                    </label>
-                    <label className="border border-slate-200 p-3 rounded-lg flex flex-col items-center justify-center gap-1.5 cursor-pointer relative hover:bg-slate-50 transition">
-                      <input type="radio" name="payment" value="rocket" className="absolute top-2 right-2 accent-amber-500" />
-                      <span className="text-xs font-bold text-slate-800">রকেট / অন্যান্য (Rocket)</span>
-                      <span className="text-[10px] text-slate-400">ম্যানুয়াল ট্রান্সফার</span>
-                    </label>
-                  </div>
-                </div>
-
                 {/* Terms Checkbox */}
                 <div className="flex items-start gap-2 pt-2">
                   <input type="checkbox" id="terms" required className="mt-1 accent-amber-500" />
@@ -151,7 +106,7 @@ export default function CTA() {
             <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
               <div className="space-y-6">
                 <h4 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-1.5">
-                  <i className="fa-solid fa-list-check text-amber-500"></i> ৩. আপনার অর্ডার সামারি
+                  <i className="fa-solid fa-list-check text-amber-500"></i> ২. আপনার অর্ডার সামারি
                 </h4>
 
                 {/* Bundle Toggle */}
@@ -213,34 +168,6 @@ export default function CTA() {
         </div>
       </section>
 
-      {/* Success Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 text-center space-y-6 shadow-2xl relative overflow-hidden">
-            <div className="absolute -top-12 -left-12 w-32 h-32 bg-emerald-100 rounded-full blur-2xl"></div>
-            <div className="w-16 h-16 bg-emerald-50 border-2 border-emerald-400 rounded-full flex items-center justify-center mx-auto text-emerald-600 text-3xl shadow-lg">
-              <i className="fa-solid fa-circle-check animate-bounce"></i>
-            </div>
-            <div className="space-y-2">
-              <h4 className="text-2xl font-black text-slate-900">আপনার অর্ডারটি সফল হয়েছে!</h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                আপনার প্রিমিয়াম বান্ডেল ও লাইফটাইম ড্রাইভের অ্যাক্সেস লিংক আপনার ইমেইলে প্রেরণ করা হয়েছে। অনুগ্রহ করে স্প্যাম বা ইনবক্স ফোল্ডার চেক করুন।
-              </p>
-            </div>
-            <div className="p-4 rounded-xl bg-slate-50 text-left space-y-2.5 text-xs border border-slate-200">
-              <div className="flex justify-between text-slate-500"><span>অর্ডার আইডি:</span> <span className="font-mono text-slate-800 font-semibold">#{orderId || "SHQ-284950"}</span></div>
-              <div className="flex justify-between text-slate-500"><span>পেমেন্ট মেথড:</span> <span className="text-slate-800 font-medium">bKash</span></div>
-              <div className="flex justify-between text-slate-500"><span>মোট পরিশোধিত:</span> <span className="text-emerald-600 font-bold">৳৬৫০ BDT</span></div>
-            </div>
-            <button
-              onClick={closeModal}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-xs transition uppercase shadow-md"
-            >
-              ধন্যবাদ, কোর্স অ্যাক্সেস করুন
-            </button>
-          </div>
-        </div>
-      )}
     </>
   )
 }

@@ -2,12 +2,21 @@ import { NextRequest, NextResponse } from "next/server"
 import { connectDB } from "@/lib/mongodb"
 import { RegistrationModel } from "@/models/Registration"
 
-// PATCH — update registration status
+// PATCH — update registration (any fields: status, privateLinks, telegramLink, etc.)
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await connectDB()
     const body = await req.json()
-    const registration = await RegistrationModel.findByIdAndUpdate(params.id, body, { new: true })
+    // Use $set for explicit field updates, including arrays
+    const update: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(body)) {
+      update[key] = value
+    }
+    const registration = await RegistrationModel.findByIdAndUpdate(
+      params.id,
+      { $set: update },
+      { returnDocument: "after", runValidators: true }
+    )
     if (!registration) return NextResponse.json({ error: "Not found" }, { status: 404 })
     return NextResponse.json(registration)
   } catch (err) {

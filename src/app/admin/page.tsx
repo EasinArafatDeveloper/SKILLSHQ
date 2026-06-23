@@ -302,6 +302,37 @@ export default function AdminPage() {
     const pendingReg = registrations.filter((r: any) => r.status === "pending").length
     const totalAmount = registrations.reduce((sum: number, r: any) => sum + (r.status === "completed" ? 650 : 0), 0)
 
+    // State for managing private links
+    const [expandedReg, setExpandedReg] = useState<string | null>(null)
+    const [linkInputs, setLinkInputs] = useState<Record<string, string>>({})
+    const [telegramInput, setTelegramInput] = useState<string>("")
+    const [savingLinks, setSavingLinks] = useState(false)
+    // Track which course we're adding a link for
+    const [addingLinkFor, setAddingLinkFor] = useState<{ courseTitle: string; link: string }>({ courseTitle: "", link: "" })
+
+    const toggleExpand = (regId: string) => {
+      if (expandedReg === regId) {
+        setExpandedReg(null)
+        setAddingLinkFor({ courseTitle: "", link: "" })
+      } else {
+        setExpandedReg(regId)
+        const reg = registrations.find((r: any) => r._id === regId)
+        if (reg) {
+          // Pre-fill telegram link
+          setTelegramInput(reg.telegramLink || "")
+          // Build linkInputs from existing privateLinks
+          const inputs: Record<string, string> = {}
+          if (reg.privateLinks) {
+            reg.privateLinks.forEach((pl: any) => {
+              inputs[pl.courseTitle] = pl.link
+            })
+          }
+          setLinkInputs(inputs)
+          setAddingLinkFor({ courseTitle: "", link: "" })
+        }
+      }
+    }
+
     const updateStatus = async (id: string, status: string) => {
       try {
         await fetch(`/api/registrations/${id}`, {
@@ -312,6 +343,14 @@ export default function AdminPage() {
         setRegistrations((prev: any[]) =>
           prev.map((r: any) => (r._id === id ? { ...r, status } : r))
         )
+        // Auto-expand when setting to completed
+        if (status === "completed") {
+          setExpandedReg(id)
+          const reg = registrations.find((r: any) => r._id === id)
+          if (reg) {
+            setTelegramInput(reg.telegramLink || "")
+          }
+        }
       } catch { showToast("স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে!", "error") }
     }
 
@@ -322,6 +361,101 @@ export default function AdminPage() {
         await fetch(`/api/registrations/${id}`, { method: "DELETE" })
         setRegistrations((prev: any[]) => prev.filter((r: any) => r._id !== id))
       } catch { showToast('ডিলিট করতে সমস্যা হয়েছে!', 'error') }
+    }
+
+    // Add a private link for a course
+    const addPrivateLink = async (regId: string) => {
+      if (!addingLinkFor.courseTitle.trim() || !addingLinkFor.link.trim()) {
+        showToast("কোর্সের নাম ও লিংক দিন", "warning")
+        return
+      }
+      setSavingLinks(true)
+      try {
+        const reg = registrations.find((r: any) => r._id === regId)
+        const existingLinks = reg?.privateLinks || []
+        const updatedLinks = [
+          ...existingLinks.filter((pl: any) => pl.courseTitle !== addingLinkFor.courseTitle.trim()),
+          { courseTitle: addingLinkFor.courseTitle.trim(), link: addingLinkFor.link.trim() }
+        ]
+
+        const res = await fetch(`/api/registrations/${regId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ privateLinks: updatedLinks }),
+        })
+
+        if (res.ok) {
+          const updated = await res.json()
+          setRegistrations((prev: any[]) =>
+            prev.map((r: any) => (r._id === regId ? updated : r))
+          )
+          setLinkInputs((prev) => ({ ...prev, [addingLinkFor.courseTitle.trim()]: addingLinkFor.link.trim() }))
+          setAddingLinkFor({ courseTitle: "", link: "" })
+          showToast("লিংক সফলভাবে যোগ হয়েছে!", "success")
+        }
+      } catch {
+        showToast("লিংক যোগ করতে সমস্যা হয়েছে!", "error")
+      } finally {
+        setSavingLinks(false)
+      }
+    }
+
+    // Remove a private link
+    const removePrivateLink = async (regId: string, courseTitle: string) => {
+      const ok = await showConfirm(`"${courseTitle}" কোর্সের লিংক রিমুভ করবেন?`)
+      if (!ok) return
+      setSavingLinks(true)
+      try {
+        const reg = registrations.find((r: any) => r._id === regId)
+        const updatedLinks = (reg?.privateLinks || []).filter((pl: any) => pl.courseTitle !== courseTitle)
+
+        const res = await fetch(`/api/registrations/${regId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ privateLinks: updatedLinks }),
+        })
+
+        if (res.ok) {
+          const updated = await res.json()
+          setRegistrations((prev: any[]) =>
+            prev.map((r: any) => (r._id === regId ? updated : r))
+          )
+          setLinkInputs((prev) => {
+            const next = { ...prev }
+            delete next[courseTitle]
+            return next
+          })
+          showToast("লিংক রিমুভ হয়েছে", "success")
+        }
+      } catch {
+        showToast("রিমুভ করতে সমস্যা হয়েছে!", "error")
+      } finally {
+        setSavingLinks(false)
+      }
+    }
+
+    // Save telegram link
+    const saveTelegramLink = async (regId: string) => {
+      setSavingLinks(true)
+      try {
+        const res = await fetch(`/api/registrations/${regId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ telegramLink: telegramInput.trim() }),
+        })
+
+        if (res.ok) {
+          const updated = await res.json()
+          setRegistrations((prev: any[]) =>
+            prev.map((r: any) => (r._id === regId ? updated : r))
+          )
+          showToast("টেলিগ্রাম লিংক সেভ হয়েছে!", "success")
+        }
+      } catch {
+        showToast("সেভ করতে সমস্যা হয়েছে!", "error")
+      } finally {
+        setSavingLinks(false)
+      }
     }
 
     return (
@@ -363,20 +497,37 @@ export default function AdminPage() {
                 <th className="py-3 px-4">ফোন</th>
                 <th className="py-3 px-4">ইমেইল</th>
                 <th className="py-3 px-4 w-24">পেমেন্ট</th>
-                <th className="py-3 px-4 w-20">অর্ডার আইডি</th>
+                <th className="py-3 px-4 w-28">ট্রান. আইডি</th>
+                <th className="py-3 px-4 w-16">প্রুফ</th>
                 <th className="py-3 px-4 w-24 text-center">স্ট্যাটাস</th>
-                <th className="py-3 px-4 w-16 text-right">অ্যাকশন</th>
+                <th className="py-3 px-4 w-28 text-right">অ্যাকশন</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {registrations.map((reg: any, i: number) => (
+                <>
                 <tr key={reg._id} className="hover:bg-slate-50/60 transition">
                   <td className="py-3 px-4 text-slate-400 text-xs">{totalReg - i}</td>
                   <td className="py-3 px-4 font-bold text-slate-800 text-sm">{reg.name}</td>
                   <td className="py-3 px-4 text-xs text-slate-600 font-mono">{reg.phone}</td>
                   <td className="py-3 px-4 text-xs text-slate-500">{reg.email}</td>
                   <td className="py-3 px-4 text-xs font-medium text-slate-700 uppercase">{reg.paymentMethod}</td>
-                  <td className="py-3 px-4 text-xs font-mono text-slate-500">#{reg._id?.slice(-6).toUpperCase()}</td>
+                  <td className="py-3 px-4 text-xs font-mono text-slate-600">
+                    {reg.transactionId ? (
+                      <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">{reg.transactionId}</span>
+                    ) : (
+                      <span className="text-slate-400 text-[10px]">N/A</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 text-center">
+                    {reg.screenshot ? (
+                      <a href={reg.screenshot} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-800 transition" title="স্ক্রিনশট দেখুন">
+                        <i className="fa-solid fa-image text-base"></i>
+                      </a>
+                    ) : (
+                      <span className="text-slate-300"><i className="fa-solid fa-image-slash text-sm"></i></span>
+                    )}
+                  </td>
                   <td className="py-3 px-4 text-center">
                     <select
                       value={reg.status}
@@ -395,14 +546,138 @@ export default function AdminPage() {
                     </select>
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <button onClick={() => deleteReg(reg._id)} className="p-1.5 hover:bg-red-50 rounded text-red-500 transition text-xs" title="ডিলিট">
-                      <i className="fa-solid fa-trash"></i>
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => toggleExpand(reg._id)}
+                        className={`p-1.5 rounded transition text-xs ${expandedReg === reg._id ? "bg-violet-100 text-violet-600" : "hover:bg-violet-50 text-violet-500"}`}
+                        title="লিংক ম্যানেজ করুন"
+                      >
+                        <i className="fa-solid fa-link"></i>
+                      </button>
+                      <button onClick={() => deleteReg(reg._id)} className="p-1.5 hover:bg-red-50 rounded text-red-500 transition text-xs" title="ডিলিট">
+                        <i className="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
                   </td>
                 </tr>
+
+                {/* Expanded: Private Links Management */}
+                {expandedReg === reg._id && (
+                  <tr key={`${reg._id}-links`}>
+                    <td colSpan={9} className="bg-violet-50/30 p-6 border-t border-violet-100">
+                      <div className="max-w-3xl space-y-5">
+                        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                          <i className="fa-solid fa-link text-violet-500"></i>
+                          {reg.name} - এর জন্য প্রাইভেট লিংক ম্যানেজ করুন
+                        </h3>
+
+                        {/* Telegram Link */}
+                        <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <i className="fa-brands fa-telegram text-sky-500"></i>
+                            <span className="text-xs font-bold text-slate-700">টেলিগ্রাম গ্রুপ লিংক</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={telegramInput}
+                              onChange={(e) => setTelegramInput(e.target.value)}
+                              placeholder="https://t.me/+xxxxxx"
+                              className="flex-1 border border-slate-200 rounded-lg py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            />
+                            <button
+                              onClick={() => saveTelegramLink(reg._id)}
+                              disabled={savingLinks}
+                              className="bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-2 rounded-lg text-xs transition disabled:opacity-50 flex items-center gap-1"
+                            >
+                              <i className="fa-solid fa-check"></i> সেভ
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Existing Private Links */}
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-bold text-slate-600">
+                            <i className="fa-solid fa-folder-tree mr-1 text-violet-500"></i>
+                            কোর্স লিংকসমূহ ({reg.privateLinks?.length || 0})
+                          </h4>
+                          {reg.privateLinks && reg.privateLinks.length > 0 ? (
+                            <div className="grid gap-2">
+                              {reg.privateLinks.map((pl: any, plIdx: number) => (
+                                <div key={plIdx} className="bg-white rounded-lg border border-slate-200 p-3 flex items-center justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold text-slate-800 truncate">{pl.courseTitle}</p>
+                                    <p className="text-[10px] text-slate-400 truncate font-mono">{pl.link}</p>
+                                  </div>
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    <button
+                                      onClick={() => window.open(pl.link, "_blank")}
+                                      className="p-1.5 hover:bg-violet-100 rounded text-violet-600 text-xs"
+                                      title="ওপেন"
+                                    >
+                                      <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                                    </button>
+                                    <button
+                                      onClick={() => removePrivateLink(reg._id, pl.courseTitle)}
+                                      className="p-1.5 hover:bg-red-50 rounded text-red-500 text-xs"
+                                      title="রিমুভ"
+                                    >
+                                      <i className="fa-solid fa-xmark"></i>
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-400 text-center py-3">এখনো কোনো কোর্স লিংক যোগ করা হয়নি</p>
+                          )}
+                        </div>
+
+                        {/* Add New Private Link */}
+                        <div className="bg-white rounded-xl border border-violet-200 p-4 space-y-3">
+                          <h4 className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                            <i className="fa-solid fa-plus-circle text-violet-500"></i> নতুন কোর্স লিংক যোগ করুন
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              value={addingLinkFor.courseTitle}
+                              onChange={(e) => setAddingLinkFor({ ...addingLinkFor, courseTitle: e.target.value })}
+                              placeholder="কোর্সের নাম (যেমন: AI Course)"
+                              className="border border-slate-200 rounded-lg py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            />
+                            <input
+                              type="text"
+                              value={addingLinkFor.link}
+                              onChange={(e) => setAddingLinkFor({ ...addingLinkFor, link: e.target.value })}
+                              placeholder="লিংক (Google Drive / Dropbox)"
+                              className="border border-slate-200 rounded-lg py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            />
+                          </div>
+                          <button
+                            onClick={() => addPrivateLink(reg._id)}
+                            disabled={savingLinks}
+                            className="bg-violet-500 hover:bg-violet-600 text-white font-bold px-4 py-2 rounded-lg text-xs transition disabled:opacity-50 flex items-center gap-1"
+                          >
+                            {savingLinks ? <><i className="fa-solid fa-spinner animate-spin"></i> সেভ হচ্ছে...</> : <><i className="fa-solid fa-plus"></i> লিংক যোগ করুন</>}
+                          </button>
+                        </div>
+
+                        {/* Close button */}
+                        <button
+                          onClick={() => setExpandedReg(null)}
+                          className="text-xs text-slate-500 hover:text-slate-700 font-medium flex items-center gap-1"
+                        >
+                          <i className="fa-solid fa-chevron-up"></i> ক্লোজ করুন
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </>
               ))}
               {registrations.length === 0 && (
-                <tr><td colSpan={8} className="py-12 text-center text-slate-400 text-sm">এখনো কেউ রেজিস্ট্রেশন করেনি</td></tr>
+                <tr><td colSpan={9} className="py-12 text-center text-slate-400 text-sm">এখনো কেউ রেজিস্ট্রেশন করেনি</td></tr>
               )}
             </tbody>
           </table>
@@ -411,31 +686,100 @@ export default function AdminPage() {
         {/* Mobile Cards */}
         <div className="md:hidden space-y-3">
           {registrations.map((reg: any, i: number) => (
-            <div key={reg._id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-slate-800 text-sm">{reg.name}</h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{reg.email} · {reg.phone}</p>
+            <div key={reg._id}>
+              <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-slate-800 text-sm">{reg.name}</h4>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{reg.email} · {reg.phone}</p>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button onClick={() => toggleExpand(reg._id)}
+                      className={`p-1.5 rounded transition ${expandedReg === reg._id ? "bg-violet-100 text-violet-600" : "hover:bg-violet-50 text-violet-500"}`}>
+                      <i className="fa-solid fa-link text-xs"></i>
+                    </button>
+                    <button onClick={() => deleteReg(reg._id)} className="p-1.5 hover:bg-red-50 rounded text-red-500 flex-shrink-0">
+                      <i className="fa-solid fa-trash text-xs"></i>
+                    </button>
+                  </div>
                 </div>
-                <button onClick={() => deleteReg(reg._id)} className="p-1.5 hover:bg-red-50 rounded text-red-500 flex-shrink-0">
-                  <i className="fa-solid fa-trash text-xs"></i>
-                </button>
+                <div className="flex flex-wrap items-center gap-2 text-[10px] mb-2">
+                  <span className="bg-slate-100 px-2 py-0.5 rounded font-mono text-slate-600">#{reg._id?.slice(-6).toUpperCase()}</span>
+                  <span className="font-medium text-slate-600 uppercase">{reg.paymentMethod}</span>
+                  {reg.transactionId && (
+                    <span className="bg-amber-50 px-2 py-0.5 rounded font-mono text-amber-700 text-[10px]" title="ট্রানজেকশন আইডি">
+                      <i className="fa-solid fa-receipt mr-1"></i>{reg.transactionId}
+                    </span>
+                  )}
+                  {reg.screenshot && (
+                    <a href={reg.screenshot} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-800" title="স্ক্রিনশট দেখুন">
+                      <i className="fa-solid fa-image"></i> স্ক্রিনশট
+                    </a>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={reg.status}
+                    onChange={(e) => updateStatus(reg._id, e.target.value)}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border-0 ${
+                      reg.status === "completed" ? "bg-emerald-100 text-emerald-700" : reg.status === "cancelled" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    <option value="pending">⏳ পেন্ডিং</option>
+                    <option value="completed">✅ কমপ্লিট</option>
+                    <option value="cancelled">❌ ক্যান্সেল</option>
+                  </select>
+                  <span className="text-[10px] text-slate-400">
+                    {reg.privateLinks?.length || 0} লিংক
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-3 text-[10px]">
-                <span className="bg-slate-100 px-2 py-0.5 rounded font-mono text-slate-600">#{reg._id?.slice(-6).toUpperCase()}</span>
-                <span className="font-medium text-slate-600 uppercase">{reg.paymentMethod}</span>
-                <select
-                  value={reg.status}
-                  onChange={(e) => updateStatus(reg._id, e.target.value)}
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border-0 ${
-                    reg.status === "completed" ? "bg-emerald-100 text-emerald-700" : reg.status === "cancelled" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
-                  }`}
-                >
-                  <option value="pending">⏳ পেন্ডিং</option>
-                  <option value="completed">✅ কমপ্লিট</option>
-                  <option value="cancelled">❌ ক্যান্সেল</option>
-                </select>
-              </div>
+
+              {/* Mobile Expanded: Private Links */}
+              {expandedReg === reg._id && (
+                <div className="bg-violet-50/50 border border-violet-200 border-t-0 rounded-b-xl p-3 space-y-3 mt-0">
+                  <h4 className="text-[11px] font-black text-slate-700">লিংক ম্যানেজমেন্ট</h4>
+
+                  {/* Telegram */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1"><i className="fa-brands fa-telegram text-sky-500"></i> টেলিগ্রাম</span>
+                    <div className="flex gap-1">
+                      <input type="text" value={telegramInput} onChange={(e) => setTelegramInput(e.target.value)}
+                        className="flex-1 border border-slate-200 rounded text-[10px] py-1.5 px-2 focus:outline-none focus:ring-1 focus:ring-violet-500" placeholder="https://t.me/..." />
+                      <button onClick={() => saveTelegramLink(reg._id)} disabled={savingLinks}
+                        className="bg-sky-500 text-white text-[10px] font-bold px-3 rounded transition disabled:opacity-50">সেভ</button>
+                    </div>
+                  </div>
+
+                  {/* Existing links */}
+                  {reg.privateLinks?.map((pl: any, plIdx: number) => (
+                    <div key={plIdx} className="bg-white rounded border p-2 flex items-center justify-between gap-1">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-bold truncate">{pl.courseTitle}</p>
+                        <p className="text-[9px] text-slate-400 truncate font-mono">{pl.link}</p>
+                      </div>
+                      <button onClick={() => removePrivateLink(reg._id, pl.courseTitle)} className="text-red-500 text-[10px] p-1"><i className="fa-solid fa-xmark"></i></button>
+                    </div>
+                  ))}
+
+                  {/* Add new */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-500">+ নতুন লিংক যোগ</span>
+                    <input type="text" value={addingLinkFor.courseTitle}
+                      onChange={(e) => setAddingLinkFor({ ...addingLinkFor, courseTitle: e.target.value })}
+                      className="w-full border border-slate-200 rounded text-[10px] py-1.5 px-2 focus:outline-none focus:ring-1 focus:ring-violet-500" placeholder="কোর্সের নাম" />
+                    <input type="text" value={addingLinkFor.link}
+                      onChange={(e) => setAddingLinkFor({ ...addingLinkFor, link: e.target.value })}
+                      className="w-full border border-slate-200 rounded text-[10px] py-1.5 px-2 focus:outline-none focus:ring-1 focus:ring-violet-500" placeholder="লিংক" />
+                    <button onClick={() => addPrivateLink(reg._id)} disabled={savingLinks}
+                      className="w-full bg-violet-500 text-white text-[10px] font-bold py-1.5 rounded transition disabled:opacity-50">
+                      {savingLinks ? "সেভ হচ্ছে..." : "লিংক যোগ করুন"}
+                    </button>
+                  </div>
+
+                  <button onClick={() => setExpandedReg(null)} className="text-[10px] text-slate-500 w-full text-center py-1">▲ ক্লোজ</button>
+                </div>
+              )}
             </div>
           ))}
           {registrations.length === 0 && <p className="text-center text-slate-400 text-sm py-8">এখনো কেউ রেজিস্ট্রেশন করেনি</p>}

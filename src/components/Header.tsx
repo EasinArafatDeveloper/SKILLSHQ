@@ -1,6 +1,23 @@
 "use client"
 
+import { useState, useEffect } from "react"
+
 export default function Header() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  useEffect(() => {
+    async function check() {
+      try {
+        const res = await fetch("/api/auth/me")
+        if (res.ok) {
+          const data = await res.json()
+          if (data.loggedIn) setIsLoggedIn(true)
+        }
+      } catch {}
+    }
+    check()
+  }, [])
+
   return (
     <>
       {/* Floating Sticky Order Button for Mobile */}
@@ -36,12 +53,21 @@ export default function Header() {
           </div>
         </div>
         <div className="flex items-center gap-4 text-sm">
-          <a
-            href="#checkout-section"
-            className="hidden sm:inline-flex bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 px-5 rounded-lg transition text-xs"
-          >
-            লগইন
-          </a>
+          {isLoggedIn ? (
+            <a
+              href="/dashboard"
+              className="hidden sm:inline-flex bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-5 rounded-lg transition text-xs shadow"
+            >
+              <i className="fa-solid fa-user mr-1.5"></i> ড্যাশবোর্ড
+            </a>
+          ) : (
+            <a
+              href="/login"
+              className="hidden sm:inline-flex bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 px-5 rounded-lg transition text-xs"
+            >
+              <i className="fa-solid fa-right-to-bracket mr-1.5"></i> লগইন
+            </a>
+          )}
         </div>
       </header>
     </>
