@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
       createdAt: user.createdAt,
       privateLinks: isCompleted ? user.privateLinks : [],
       telegramLink: isCompleted ? user.telegramLink : "",
+      telegramClicked: isCompleted ? user.telegramClicked : false,
       isCompleted,
     })
   } catch (err) {

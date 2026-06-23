@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { connectDB } from "@/lib/mongodb"
 import { RegistrationModel } from "@/models/Registration"
+import { sendOrderConfirmationEmail } from "@/lib/email"
 import crypto from "crypto"
 
 // GET — all registrations
@@ -29,13 +30,25 @@ export async function POST(req: NextRequest) {
       authToken,
     })
 
+    // Send confirmation email (fire and forget - don't block response)
+    const orderId = registration._id.toString().slice(-8).toUpperCase()
+    sendOrderConfirmationEmail({
+      name: body.name,
+      email: body.email,
+      phone: body.phone,
+      orderId,
+      transactionId: body.transactionId || "",
+      amount: body.amount || "৳৬৫০",
+      paymentMethod: body.paymentMethod || "bkash",
+    }).catch(err => console.error("Email send failed:", err))
+
     // Set auth cookie for auto-login
     const res = NextResponse.json(registration, { status: 201 })
     res.cookies.set("shq_auth", authToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 30 * 24 * 60 * 60, // 30 days
+      maxAge: 30 * 24 * 60 * 60,
       path: "/",
     })
 

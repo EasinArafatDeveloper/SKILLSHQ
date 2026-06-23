@@ -17,6 +17,7 @@ import {
   FA_ICONS,
 } from "@/lib/store"
 import { showToast, showSuccess, showError, showConfirm } from "@/lib/notify"
+import Swal from "sweetalert2"
 
 type NavItem =
   | "courses"
@@ -363,6 +364,21 @@ export default function AdminPage() {
       } catch { showToast('ডিলিট করতে সমস্যা হয়েছে!', 'error') }
     }
 
+    // View payment screenshot in a modal
+    const viewScreenshot = (src: string) => {
+      Swal.fire({
+        title: "পেমেন্ট স্ক্রিনশট",
+        html: `<img src="${src}" alt="Payment Screenshot" style="max-width:100%;max-height:70vh;border-radius:12px;" />`,
+        showCloseButton: true,
+        showConfirmButton: false,
+        width: "90%",
+        customClass: {
+          popup: "!rounded-2xl !shadow-2xl !bg-slate-900",
+          title: "!text-white !text-sm !font-bold",
+        },
+      })
+    }
+
     // Add a private link for a course
     const addPrivateLink = async (regId: string) => {
       if (!addingLinkFor.courseTitle.trim() || !addingLinkFor.link.trim()) {
@@ -521,9 +537,9 @@ export default function AdminPage() {
                   </td>
                   <td className="py-3 px-4 text-center">
                     {reg.screenshot ? (
-                      <a href={reg.screenshot} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-800 transition" title="স্ক্রিনশট দেখুন">
-                        <i className="fa-solid fa-image text-base"></i>
-                      </a>
+                      <button onClick={() => viewScreenshot(reg.screenshot)} className="text-amber-600 hover:text-amber-800 transition" title="স্ক্রিনশট দেখুন">
+                        <img src={reg.screenshot} alt="payment proof" className="w-8 h-8 rounded object-cover border border-slate-200" />
+                      </button>
                     ) : (
                       <span className="text-slate-300"><i className="fa-solid fa-image-slash text-sm"></i></span>
                     )}
@@ -604,19 +620,27 @@ export default function AdminPage() {
                           {reg.privateLinks && reg.privateLinks.length > 0 ? (
                             <div className="grid gap-2">
                               {reg.privateLinks.map((pl: any, plIdx: number) => (
-                                <div key={plIdx} className="bg-white rounded-lg border border-slate-200 p-3 flex items-center justify-between gap-3">
+                                <div key={plIdx} className={"bg-white rounded-lg border p-3 flex items-center justify-between gap-3 " + (pl.clicked ? "border-emerald-300 bg-emerald-50/30" : "border-slate-200")}>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-bold text-slate-800 truncate">{pl.courseTitle}</p>
+                                    <p className="text-xs font-bold text-slate-800 truncate">
+                                      {pl.courseTitle}
+                                      {pl.clicked ? <span className="ml-1.5 text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-normal">✅ দেখা হয়েছে</span> : <span className="ml-1.5 text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-normal">⏳ দেখা হয়নি</span>}
+                                    </p>
                                     <p className="text-[10px] text-slate-400 truncate font-mono">{pl.link}</p>
+                                    {pl.clickedAt && <p className="text-[9px] text-slate-400 mt-0.5">{new Date(pl.clickedAt).toLocaleString("bn-BD")}</p>}
                                   </div>
                                   <div className="flex items-center gap-1 flex-shrink-0">
-                                    <button
-                                      onClick={() => window.open(pl.link, "_blank")}
-                                      className="p-1.5 hover:bg-violet-100 rounded text-violet-600 text-xs"
-                                      title="ওপেন"
-                                    >
-                                      <i className="fa-solid fa-arrow-up-right-from-square"></i>
-                                    </button>
+                                    {pl.clicked ? (
+                                      <span className="text-[10px] text-emerald-600 font-bold px-2">✅</span>
+                                    ) : (
+                                      <button
+                                        onClick={() => window.open(pl.link, "_blank")}
+                                        className="p-1.5 hover:bg-violet-100 rounded text-violet-600 text-xs"
+                                        title="ওপেন"
+                                      >
+                                        <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                                      </button>
+                                    )}
                                     <button
                                       onClick={() => removePrivateLink(reg._id, pl.courseTitle)}
                                       className="p-1.5 hover:bg-red-50 rounded text-red-500 text-xs"
@@ -712,9 +736,10 @@ export default function AdminPage() {
                     </span>
                   )}
                   {reg.screenshot && (
-                    <a href={reg.screenshot} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-800" title="স্ক্রিনশট দেখুন">
-                      <i className="fa-solid fa-image"></i> স্ক্রিনশট
-                    </a>
+                    <button onClick={() => viewScreenshot(reg.screenshot)} className="text-amber-600 hover:text-amber-800 flex items-center gap-1" title="স্ক্রিনশট দেখুন">
+                      <img src={reg.screenshot} alt="proof" className="w-6 h-6 rounded object-cover border" />
+                      <span className="text-[10px]">স্ক্রিনশট</span>
+                    </button>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -753,9 +778,9 @@ export default function AdminPage() {
 
                   {/* Existing links */}
                   {reg.privateLinks?.map((pl: any, plIdx: number) => (
-                    <div key={plIdx} className="bg-white rounded border p-2 flex items-center justify-between gap-1">
+                    <div key={plIdx} className={"bg-white rounded border p-2 flex items-center justify-between gap-1 " + (pl.clicked ? "border-emerald-300 bg-emerald-50/30" : "")}>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-bold truncate">{pl.courseTitle}</p>
+                        <p className="text-[10px] font-bold truncate">{pl.courseTitle} {pl.clicked ? "✅" : "⏳"}</p>
                         <p className="text-[9px] text-slate-400 truncate font-mono">{pl.link}</p>
                       </div>
                       <button onClick={() => removePrivateLink(reg._id, pl.courseTitle)} className="text-red-500 text-[10px] p-1"><i className="fa-solid fa-xmark"></i></button>

@@ -7,6 +7,7 @@ interface PrivateLink {
   courseTitle: string
   link: string
   unlockedAt?: string
+  clicked?: boolean
   _id: string
 }
 
@@ -22,6 +23,7 @@ interface DashboardData {
   createdAt: string
   privateLinks: PrivateLink[]
   telegramLink: string
+  telegramClicked?: boolean
   isCompleted: boolean
 }
 
@@ -127,6 +129,77 @@ export default function DashboardPage() {
     }
   }
 
+  const handleOpenLink = async (linkId: string, linkUrl: string) => {
+    // First, call API to mark link as clicked (one-time access)
+    try {
+      const res = await fetch("/api/click-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ linkId }),
+      })
+      const result = await res.json()
+      if (res.ok && result.success) {
+        setData((prev) => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            privateLinks: prev.privateLinks.map((pl) =>
+              pl._id === linkId ? { ...pl, clicked: true } : pl
+            ),
+          }
+        })
+        window.open(linkUrl, "_blank", "noopener,noreferrer")
+      } else if (result.alreadyClicked) {
+        Swal.fire({
+          icon: "warning",
+          title: "ইতিমধ্যে দেখা হয়েছে!",
+          text: "আপনি আগেই এই লিংকটি একবার দেখেছেন। প্রতিটি লিংক শুধুমাত্র একবারই খোলা যাবে।",
+          confirmButtonColor: "#D97706",
+          customClass: { popup: "!rounded-2xl" },
+        })
+      }
+    } catch {
+      Swal.fire({
+        icon: "error",
+        title: "সমস্যা হয়েছে!",
+        text: "লিংক খুলতে সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+        confirmButtonColor: "#D97706",
+        customClass: { popup: "!rounded-2xl" },
+      })
+    }
+  }
+
+  const handleTelegramClick = async (telegramUrl: string) => {
+    try {
+      const res = await fetch("/api/click-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "telegram" }),
+      })
+      const result = await res.json()
+      if (res.ok && result.success) {
+        setData((prev) => (prev ? { ...prev, telegramClicked: true } : prev))
+        window.open(telegramUrl, "_blank", "noopener,noreferrer")
+      } else if (result.alreadyClicked) {
+        Swal.fire({
+          icon: "info",
+          title: "ইতিমধ্যে জয়েন করেছেন!",
+          text: "আপনি আগেই টেলিগ্রাম গ্রুপে জয়েন করেছেন।",
+          confirmButtonColor: "#059669",
+          customClass: { popup: "!rounded-2xl" },
+        })
+      }
+    } catch {
+      Swal.fire({
+        icon: "error",
+        title: "সমস্যা হয়েছে!",
+        text: "টেলিগ্রাম লিংক খুলতে সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+        confirmButtonColor: "#059669",
+        customClass: { popup: "!rounded-2xl" },
+      })
+    }
+  }
+
   // ---- DASHBOARD VIEW (logged in) ----
   if (data) {
     const isPending = data.status === "pending"
@@ -193,33 +266,57 @@ export default function DashboardPage() {
           {isCompleted && (
             <>
               {data.telegramLink ? (
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
+                <div className={"rounded-2xl p-6 text-white shadow-lg " + (data.telegramClicked ? "bg-gradient-to-r from-slate-400 to-slate-500 opacity-70" : "bg-gradient-to-r from-blue-500 to-blue-600")}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"><i className="fa-brands fa-telegram text-xl"></i></div>
-                    <div><h3 className="font-black text-lg">টেলিগ্রাম গ্রুপে জয়েন করুন</h3><p className="text-xs text-blue-100">কমিউনিটির সাথে যুক্ত হতে নিচের বাটনে ক্লিক করুন</p></div>
+                    <div>
+                      <h3 className="font-black text-lg">
+                        {data.telegramClicked ? "✅ টেলিগ্রাম গ্রুপে জয়েন করেছেন" : "টেলিগ্রাম গ্রুপে জয়েন করুন"}
+                      </h3>
+                      <p className="text-xs text-blue-100">{data.telegramClicked ? "আপনি ইতিমধ্যে গ্রুপে জয়েন করেছেন।" : "কমিউনিটির সাথে যুক্ত হতে নিচের বাটনে ক্লিক করুন"}</p>
+                    </div>
                   </div>
-                  <button onClick={() => window.open(data.telegramLink, "_blank", "noopener,noreferrer")} className="w-full bg-white text-blue-600 font-extrabold py-3 rounded-xl hover:bg-blue-50 transition text-sm flex items-center justify-center gap-2">
-                    <i className="fa-brands fa-telegram"></i> টেলিগ্রাম গ্রুপে জয়েন করুন <i className="fa-solid fa-arrow-up-right-from-square text-xs ml-1"></i>
-                  </button>
+                  {data.telegramClicked ? (
+                    <div className="w-full bg-white/20 text-white font-extrabold py-3 rounded-xl text-sm flex items-center justify-center gap-2 cursor-not-allowed">
+                      <i className="fa-solid fa-check"></i> ইতিমধ্যে জয়েন করেছেন
+                    </div>
+                  ) : (
+                    <button onClick={() => handleTelegramClick(data.telegramLink)} className="w-full bg-white text-blue-600 font-extrabold py-3 rounded-xl hover:bg-blue-50 transition text-sm flex items-center justify-center gap-2">
+                      <i className="fa-brands fa-telegram"></i> টেলিগ্রাম গ্রুপে জয়েন করুন <i className="fa-solid fa-arrow-up-right-from-square text-xs ml-1"></i>
+                    </button>
+                  )}
                 </div>
               ) : null}
 
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                 <h2 className="text-lg font-black text-slate-900 mb-1 flex items-center gap-2"><i className="fa-solid fa-lock-keyhole text-emerald-500"></i> আপনার আনলকড কোর্সসমূহ</h2>
-                <p className="text-xs text-slate-500 mb-5">নিচের প্রতিটি কোর্সের লিংক শুধুমাত্র আপনার জন্যই আনলক করা হয়েছে। কাউকে শেয়ার করবেন না।</p>
+                <p className="text-xs text-slate-500 mb-5">নিচের প্রতিটি কোর্সের লিংক শুধুমাত্র একবারই ওপেন করতে পারবেন। কাউকে শেয়ার করবেন না।</p>
                 {!data.privateLinks || data.privateLinks.length === 0 ? (
                   <div className="text-center py-8 text-slate-400"><i className="fa-solid fa-folder-open text-3xl mb-2 block"></i><p className="text-sm">এখনো কোনো কোর্স আনলক করা হয়নি। আমাদের টিম শীঘ্রই লিংক যুক্ত করবে।</p></div>
                 ) : (
                   <div className="grid gap-3">
                     {data.privateLinks.map((item, idx) => (
-                      <div key={item._id || idx} className="bg-slate-50 rounded-xl border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div key={item._id || idx} className={"rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 " + (item.clicked ? "bg-slate-100 border-slate-200 opacity-60" : "bg-slate-50 border-slate-200")}>
                         <div className="flex items-center gap-3 min-w-0">
-                          <span className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0"><i className="fa-solid fa-link text-emerald-600 text-sm"></i></span>
-                          <div className="min-w-0"><h4 className="text-sm font-bold text-slate-800 truncate">{item.courseTitle}</h4><p className="text-[10px] text-slate-400">আনলক হয়েছে</p></div>
+                          <span className={"w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 " + (item.clicked ? "bg-slate-200" : "bg-emerald-100")}>
+                            <i className={"text-sm " + (item.clicked ? "fa-solid fa-check-circle text-slate-400" : "fa-solid fa-link text-emerald-600")}></i>
+                          </span>
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-bold text-slate-800 truncate">{item.courseTitle}</h4>
+                            <p className="text-[10px] text-slate-400">{item.clicked ? "✅ দেখা হয়েছে" : "আনলক হয়েছে"}</p>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <button onClick={() => copyLink(item.link)} className="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1"><i className="fa-solid fa-copy"></i> কপি</button>
-                          <button onClick={() => window.open(item.link, "_blank", "noopener,noreferrer")} className="text-xs bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1"><i className="fa-solid fa-arrow-up-right-from-square"></i> ওপেন</button>
+                          {item.clicked ? (
+                            <span className="text-xs bg-slate-200 text-slate-500 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 cursor-not-allowed">
+                              <i className="fa-solid fa-check"></i> দেখা হয়েছে
+                            </span>
+                          ) : (
+                            <>
+                              <button onClick={() => copyLink(item.link)} className="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1"><i className="fa-solid fa-copy"></i> কপি</button>
+                              <button onClick={() => handleOpenLink(item._id, item.link)} className="text-xs bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1"><i className="fa-solid fa-arrow-up-right-from-square"></i> ওপেন</button>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}

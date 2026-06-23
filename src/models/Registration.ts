@@ -4,6 +4,8 @@ export interface IPrivateLink {
   courseTitle: string
   link: string
   unlockedAt?: Date
+  clicked: boolean
+  clickedAt?: Date
 }
 
 export interface IRegistration extends Document {
@@ -15,11 +17,11 @@ export interface IRegistration extends Document {
   transactionId: string
   screenshot: string
   status: "pending" | "completed" | "cancelled"
-  // Auth: token stored so user can auto-login via email/phone
   authToken: string
-  // Private content links (added by admin after accept)
   privateLinks: IPrivateLink[]
   telegramLink: string
+  telegramClicked: boolean
+  telegramClickedAt?: Date
   createdAt: Date
 }
 
@@ -28,6 +30,8 @@ const PrivateLinkSchema = new Schema<IPrivateLink>(
     courseTitle: { type: String, required: true },
     link: { type: String, required: true },
     unlockedAt: { type: Date, default: Date.now },
+    clicked: { type: Boolean, default: false },
+    clickedAt: { type: Date, default: null },
   },
   { _id: true }
 )
@@ -45,6 +49,8 @@ const RegistrationSchema = new Schema<IRegistration>(
     authToken: { type: String, default: "" },
     privateLinks: { type: [PrivateLinkSchema], default: [] },
     telegramLink: { type: String, default: "" },
+    telegramClicked: { type: Boolean, default: false },
+    telegramClickedAt: { type: Date, default: null },
   },
   { timestamps: true }
 )
