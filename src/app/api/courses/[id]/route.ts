@@ -7,9 +7,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   try {
     await connectDB()
     const body = await req.json()
+    // Strip MongoDB internal fields to avoid immutable _id error
+    const { _id, __v, createdAt, updatedAt, courseId: _cid, id: _idField, ...cleanBody } = body
     const course = await CourseModel.findOneAndUpdate(
       { courseId: params.id },
-      body,
+      { $set: cleanBody },
       { new: true }
     )
     if (!course) return NextResponse.json({ error: "Course not found" }, { status: 404 })

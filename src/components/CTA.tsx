@@ -1,11 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { fetchSettings, AppSettings } from "@/lib/store"
 
 export default function CTA() {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+
+  useEffect(() => {
+    fetchSettings().then(setSettings).catch(() => {})
+  }, [])
+
+  const bundlePrice = settings?.bundlePrice || "৳৬৫০"
+  const bundleRegularPrice = settings?.bundleRegularPrice || "৳১,২০,০০০"
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -119,7 +128,7 @@ export default function CTA() {
                         <span className="text-[10px] text-emerald-700 font-bold">সবচেয়ে জনপ্রিয় চয়েস</span>
                       </div>
                     </div>
-                    <span className="text-sm font-extrabold text-emerald-600">৳৬৫০ BDT</span>
+                    <span className="text-sm font-extrabold text-emerald-600">{bundlePrice} BDT</span>
                   </div>
                   <p className="text-[10px] text-slate-400 text-center font-medium">সম্পূর্ণ বান্ডেল কিনলেই কেবল Canva Premium ফ্রি অফারটি প্রযোজ্য হবে।</p>
                 </div>
@@ -128,7 +137,7 @@ export default function CTA() {
                 <div className="space-y-3 border-t border-slate-100 pt-4 text-xs">
                   <div className="flex justify-between text-slate-500 font-medium">
                     <span>সর্বমোট ১০+ প্রিমিয়াম প্রোডাক্ট</span>
-                    <span className="line-through text-slate-400">৳১,২০,০০০</span>
+                    <span className="line-through text-slate-400">{bundleRegularPrice}</span>
                   </div>
                   <div className="flex justify-between text-slate-500 font-medium">
                     <span>ক্যাম্পেইন ডিসকাউন্ট</span>
@@ -144,7 +153,7 @@ export default function CTA() {
                   </div>
                   <div className="border-t border-slate-100 pt-3 flex justify-between text-sm font-bold text-slate-900">
                     <span>পরিশোধযোগ্য মোট মূল্য:</span>
-                    <span className="text-lg text-emerald-600 font-black">৳৬৫০ BDT</span>
+                    <span className="text-lg text-emerald-600 font-black">{bundlePrice} BDT</span>
                   </div>
                 </div>
               </div>

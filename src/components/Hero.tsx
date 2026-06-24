@@ -120,7 +120,7 @@ export default function Hero() {
             <span className="text-xs text-slate-500 font-medium">সর্বমোট ভ্যালু</span>
           </div>
           <div className="p-4 rounded-xl bg-white border border-slate-200/80 shadow-sm">
-            <span className="block text-2xl md:text-3xl font-extrabold text-emerald-600">৳৬৫০</span>
+            <span className="block text-2xl md:text-3xl font-extrabold text-emerald-600">{settings?.bundlePrice || "৳৬৫০"}</span>
             <span className="text-xs text-slate-500 font-medium">আজকের বিশেষ অফার</span>
           </div>
           <div className="p-4 rounded-xl bg-white border border-slate-200/80 shadow-sm">

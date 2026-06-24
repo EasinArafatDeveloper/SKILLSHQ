@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Swal from "sweetalert2"
+import { fetchSettings, AppSettings } from "@/lib/store"
 
 function CheckoutForm() {
   const router = useRouter()
@@ -17,6 +18,9 @@ function CheckoutForm() {
   const [screenshotName, setScreenshotName] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [agreed, setAgreed] = useState(false)
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+
+  const bundlePrice = settings?.bundlePrice || "৳৬৫০"
 
   useEffect(() => {
     // Pre-fill from query params (coming from CTA)
@@ -26,6 +30,8 @@ function CheckoutForm() {
     if (qName) setName(decodeURIComponent(qName))
     if (qPhone) setPhone(decodeURIComponent(qPhone))
     if (qEmail) setEmail(decodeURIComponent(qEmail))
+    // Fetch dynamic price from settings
+    fetchSettings().then(setSettings).catch(() => {})
   }, [searchParams])
 
   const handleScreenshotUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +87,7 @@ function CheckoutForm() {
           phone,
           email,
           paymentMethod,
-          amount: "৳৬৫০",
+          amount: bundlePrice,
           transactionId: transactionId.trim(),
           screenshot,
           status: "pending",
@@ -103,7 +109,7 @@ function CheckoutForm() {
               <div class="flex justify-between"><span class="text-slate-500">অর্ডার আইডি:</span> <span class="font-mono font-bold text-slate-800">#${orderId}</span></div>
               <div class="flex justify-between"><span class="text-slate-500">পেমেন্ট মেথড:</span> <span class="font-medium text-slate-800">${paymentMethod === "bkash" ? "bKash" : "Nagad"}</span></div>
               <div class="flex justify-between"><span class="text-slate-500">ট্রানজেকশন আইডি:</span> <span class="font-mono font-medium text-slate-800">${transactionId.trim()}</span></div>
-              <div class="flex justify-between"><span class="text-slate-500">মোট:</span> <span class="text-emerald-600 font-bold">৳৬৫০ BDT</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">মোট:</span> <span class="text-emerald-600 font-bold">${bundlePrice} BDT</span></div>
             </div>
           </div>
         `,
@@ -293,7 +299,7 @@ function CheckoutForm() {
             <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg flex items-start gap-2">
               <i className="fa-solid fa-circle-info text-amber-600 mt-0.5"></i>
               <p className="text-[11px] text-amber-800 font-medium">
-                উপরের bKash অথবা Nagad নাম্বারে <strong>৳৬৫০</strong> টাকা Send Money করুন। তারপর নিচে ট্রানজেকশন আইডি ও স্ক্রিনশট দিন।
+                উপরের bKash অথবা Nagad নাম্বারে <strong>{bundlePrice}</strong> টাকা Send Money করুন। তারপর নিচে ট্রানজেকশন আইডি ও স্ক্রিনশট দিন।
               </p>
             </div>
           </div>
@@ -376,7 +382,7 @@ function CheckoutForm() {
               </div>
               <div className="border-t border-slate-100 pt-3 flex justify-between text-base font-bold text-slate-900">
                 <span>পরিশোধযোগ্য মূল্য:</span>
-                <span className="text-emerald-600 text-lg font-black">৳৬৫০ BDT</span>
+                <span className="text-emerald-600 text-lg font-black">{bundlePrice} BDT</span>
               </div>
             </div>
           </div>

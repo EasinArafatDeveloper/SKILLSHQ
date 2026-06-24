@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { fetchSettings, AppSettings } from "@/lib/store"
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [settings, setSettings] = useState<AppSettings | null>(null)
 
   useEffect(() => {
     async function check() {
@@ -16,7 +18,10 @@ export default function Header() {
       } catch {}
     }
     check()
+    fetchSettings().then(setSettings).catch(() => {})
   }, [])
+
+  const bundlePrice = settings?.bundlePrice || "৳৬৫০"
 
   return (
     <>
@@ -27,7 +32,7 @@ export default function Header() {
           className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center font-bold py-3.5 rounded-xl shadow-2xl flex items-center justify-center gap-2 animate-bounce border border-white/20"
         >
           <i className="fa-solid fa-shopping-cart text-lg"></i>
-          <span>অর্ডার করুন (৳৬৫০)</span>
+          <span>অর্ডার করুন ({bundlePrice})</span>
         </a>
       </div>
 

@@ -100,8 +100,8 @@ export default function StickyCountdownBar() {
 
             {/* Price Badge */}
             <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur px-3 py-1 rounded-full">
-              <span className="text-[10px] line-through text-white/60">৳১,২০,০০০</span>
-              <span className="text-sm font-black text-red-300">মাত্র ৳৬৫০!</span>
+              <span className="text-[10px] line-through text-white/60">{settings?.bundleRegularPrice || "৳১,২০,০০০"}</span>
+              <span className="text-sm font-black text-red-300">মাত্র {settings?.bundlePrice || "৳৬৫০"}!</span>
             </div>
 
             {/* CTA */}

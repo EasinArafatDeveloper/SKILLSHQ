@@ -1,16 +1,29 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Course, getCourses, getSettings, AppSettings } from "@/lib/store"
+import { Course, fetchCourses, fetchSettings, AppSettings, getCourses, getSettings } from "@/lib/store"
 
 export default function Courses() {
   const [searchTerm, setSearchTerm] = useState("")
   const [courses, setCourses] = useState<Course[]>([])
   const [settings, setSettings] = useState<AppSettings | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setCourses(getCourses())
-    setSettings(getSettings())
+    async function load() {
+      try {
+        const [c, s] = await Promise.all([fetchCourses(), fetchSettings()])
+        setCourses(c)
+        setSettings(s)
+      } catch {
+        // fallback to localStorage if API fails
+        setCourses(getCourses())
+        setSettings(getSettings())
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
   }, [])
 
   const filteredCourses = courses.filter((course) => {

@@ -15,6 +15,8 @@ import {
   isAdminLoggedIn,
   generateId,
   FA_ICONS,
+  saveCourses,
+  saveSettings,
 } from "@/lib/store"
 import { showToast, showSuccess, showError, showConfirm } from "@/lib/notify"
 import Swal from "sweetalert2"
@@ -97,9 +99,13 @@ export default function AdminPage() {
         fetchSettings(),
         fetch("/api/registrations").then(res => res.ok ? res.json() : []),
       ])
-      setCourses(c.map((x: Course) => ({ ...x, id: x.courseId || x.id })))
+      const processed = c.map((x: Course) => ({ ...x, id: x.courseId || x.id }))
+      setCourses(processed)
       setSettings(s)
       setRegistrations(Array.isArray(r) ? r : [])
+      // Sync to localStorage as cache for landing page fallback
+      saveCourses(processed)
+      saveSettings(s)
     } catch { /* fallback */ }
     finally { setLoading(false) }
   }
@@ -131,10 +137,18 @@ export default function AdminPage() {
     try {
       if (editingId) {
         const updated = await updateCourse(editingId, target!)
-        setCourses(prev => prev.map(c => (c.courseId || c.id) === editingId ? { ...updated, id: updated.courseId || updated.id } : c))
+        setCourses(prev => {
+          const next = prev.map(c => (c.courseId || c.id) === editingId ? { ...updated, id: updated.courseId || updated.id } : c)
+          saveCourses(next)
+          return next
+        })
       } else {
         const created = await createCourse({ ...newCourse, courseId: generateId() })
-        setCourses(prev => [...prev, { ...created, id: created.courseId || created.id }])
+        setCourses(prev => {
+          const next = [...prev, { ...created, id: created.courseId || created.id }]
+          saveCourses(next)
+          return next
+        })
         setNewCourse({ icon: defaultIcon.value, iconColor: defaultIcon.color, bgColor: defaultIcon.bg, title: "", desc: "", regularPrice: "৳", offerPrice: "৳", highlight: false })
       }
       setEditingCourse(null)
@@ -149,7 +163,11 @@ export default function AdminPage() {
     if (!ok) return
     try {
       await deleteCourse(id)
-      setCourses(prev => prev.filter(c => (c.courseId || c.id) !== id))
+      setCourses(prev => {
+        const next = prev.filter(c => (c.courseId || c.id) !== id)
+        saveCourses(next)
+        return next
+      })
     } catch { showToast('ডিলিট করতে সমস্যা হয়েছে!', 'error') }
   }
 
@@ -905,9 +923,8 @@ export default function AdminPage() {
     useEffect(() => { setDraft(settings) }, [settings?.bundlePrice, settings?.bundleRegularPrice])
     if (!draft) return null
     const save = async () => {
-      setSettings(draft)
       setSettingsSaving(true)
-      try { await updateSettings(draft); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
+      try { await updateSettings(draft); setSettings(draft); saveSettings(draft); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
       catch { showToast('সেটিংস সেভ করতে সমস্যা হয়েছে!', 'error') }
       finally { setSettingsSaving(false) }
     }
@@ -951,8 +968,8 @@ export default function AdminPage() {
     useEffect(() => { setDraft(settings) }, [settings?.countdownMinutes, settings?.countdownSeconds])
     if (!draft) return null
     const save = async () => {
-      setSettings(draft); setSettingsSaving(true)
-      try { await updateSettings(draft); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
+      setSettingsSaving(true)
+      try { await updateSettings(draft); setSettings(draft); saveSettings(draft); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
       catch { showToast('সেটিংস সেভ করতে সমস্যা হয়েছে!', 'error') }
       finally { setSettingsSaving(false) }
     }
@@ -998,8 +1015,9 @@ export default function AdminPage() {
     const [draft, setDraft] = useState({ val: "" })
     useEffect(() => { setDraft({ val: settings.toolsAndResources || "" }) }, [settings?.toolsAndResources])
     const save = async () => {
-      const updated = { ...settings, toolsAndResources: draft.val }; setSettings(updated); setSettingsSaving(true)
-      try { await updateSettings(updated); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
+      const updated = { ...settings, toolsAndResources: draft.val }
+      setSettingsSaving(true)
+      try { await updateSettings(updated); setSettings(updated); saveSettings(updated); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
       catch { showToast('সেটিংস সেভ করতে সমস্যা হয়েছে!', 'error') }
       finally { setSettingsSaving(false) }
     }
@@ -1026,8 +1044,9 @@ export default function AdminPage() {
     const [draft, setDraft] = useState({ val: "" })
     useEffect(() => { setDraft({ val: settings.offerEndMessage || "" }) }, [settings?.offerEndMessage])
     const save = async () => {
-      const updated = { ...settings, offerEndMessage: draft.val }; setSettings(updated); setSettingsSaving(true)
-      try { await updateSettings(updated); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
+      const updated = { ...settings, offerEndMessage: draft.val }
+      setSettingsSaving(true)
+      try { await updateSettings(updated); setSettings(updated); saveSettings(updated); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
       catch { showToast('সেটিংস সেভ করতে সমস্যা হয়েছে!', 'error') }
       finally { setSettingsSaving(false) }
     }
@@ -1096,9 +1115,8 @@ export default function AdminPage() {
       // Auto-set thumbnail from YouTube if not manually provided
       const thumbToSave = draft.thumb || autoThumb || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : "")
       const updated = { ...settings, videoUrl: draft.url, videoTitle: draft.title, videoThumbnail: thumbToSave }
-      setSettings(updated)
       setSettingsSaving(true)
-      try { await updateSettings(updated); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
+      try { await updateSettings(updated); setSettings(updated); saveSettings(updated); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
       catch { showToast('সেটিংস সেভ করতে সমস্যা হয়েছে!', 'error') }
       finally { setSettingsSaving(false) }
     }
@@ -1233,8 +1251,9 @@ export default function AdminPage() {
     const [draft, setDraft] = useState({ wa: "", tg: "" })
     useEffect(() => { setDraft({ wa: settings.whatsappNumber || "", tg: settings.telegramLink || "" }) }, [settings?.whatsappNumber, settings?.telegramLink])
     const save = async () => {
-      const updated = { ...settings, whatsappNumber: draft.wa, telegramLink: draft.tg }; setSettings(updated); setSettingsSaving(true)
-      try { await updateSettings(updated); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
+      const updated = { ...settings, whatsappNumber: draft.wa, telegramLink: draft.tg }
+      setSettingsSaving(true)
+      try { await updateSettings(updated); setSettings(updated); saveSettings(updated); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
       catch { showToast('সেটিংস সেভ করতে সমস্যা হয়েছে!', 'error') }
       finally { setSettingsSaving(false) }
     }

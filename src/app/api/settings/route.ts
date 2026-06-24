@@ -22,9 +22,11 @@ export async function PUT(req: NextRequest) {
   try {
     await connectDB()
     const body = await req.json()
+    // Strip MongoDB internal fields to avoid immutable _id error
+    const { _id, __v, createdAt, updatedAt, key: _key, ...cleanBody } = body
     const settings = await SettingsModel.findOneAndUpdate(
       { key: "main" },
-      body,
+      { $set: cleanBody },
       { new: true, upsert: true }
     )
     return NextResponse.json(settings)

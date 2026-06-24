@@ -50,7 +50,12 @@ async function apiCall(path: string, options?: RequestInit) {
 // ----- Courses (via API) -----
 export async function fetchCourses(): Promise<Course[]> {
   try {
-    return await apiCall("/api/courses")
+    const data = await apiCall("/api/courses")
+    // Strip MongoDB internal fields from each course
+    return data.map((c: any) => {
+      const { _id, __v, createdAt, updatedAt, ...clean } = c
+      return clean as Course
+    })
   } catch {
     return getCoursesFallback()
   }
@@ -79,7 +84,10 @@ export async function deleteCourse(courseId: string): Promise<void> {
 // ----- Settings (via API) -----
 export async function fetchSettings(): Promise<AppSettings> {
   try {
-    return await apiCall("/api/settings")
+    const data = await apiCall("/api/settings")
+    // Strip MongoDB internal fields
+    const { _id, __v, createdAt, updatedAt, key, ...clean } = data
+    return clean as AppSettings
   } catch {
     return getSettingsFallback()
   }

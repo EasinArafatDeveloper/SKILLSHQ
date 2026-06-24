@@ -63,7 +63,7 @@ export default function Pricing() {
             Canva Premium <span className="text-gradient-canva">একদম ফ্রি!</span>
           </h3>
           <p className="text-sm md:text-base text-slate-600 max-w-xl mx-auto font-medium">
-            আমাদের বিশেষ &quot;৳৬৫০ অল-ইন-ওয়ান&quot; প্যাকেজটি অর্ডার করলে আপনি সম্পূর্ণ লাইফটাইমের জন্য ক্যানভা প্রিমিয়াম একাউন্ট পাবেন কোনো অতিরিক্ত ফি ছাড়াই!
+            আমাদের বিশেষ &quot;{settings?.bundlePrice || "৳৬৫০"} অল-ইন-ওয়ান&quot; প্যাকেজটি অর্ডার করলে আপনি সম্পূর্ণ লাইফটাইমের জন্য ক্যানভা প্রিমিয়াম একাউন্ট পাবেন কোনো অতিরিক্ত ফি ছাড়াই!
           </p>
         </div>
 
