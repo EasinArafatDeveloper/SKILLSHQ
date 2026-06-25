@@ -1,12 +1,8 @@
-"use client"
-
-// ============================================================
-// Shared Data Store — MongoDB via API (localStorage fallback)
-// ============================================================
+import mongoose from "mongoose"
 
 export interface Course {
-  courseId?: string
   id?: string
+  courseId?: string
   icon: string
   iconColor: string
   bgColor: string
@@ -30,6 +26,14 @@ export interface AppSettings {
   videoThumbnail: string
   whatsappNumber: string
   telegramLink: string
+}
+
+export interface Faq {
+  id?: string
+  faqId?: string
+  question: string
+  answer: string
+  order: number
 }
 
 const ADMIN_PASSWORD = "SkillsHQ@2026#Secure"
@@ -69,7 +73,7 @@ export async function createCourse(course: Course): Promise<Course> {
   })
 }
 
-export async function updateCourse(courseId: string, course: Course): Promise<Course> {
+export async function updateCourse(courseId: string, course: Partial<Course>): Promise<Course> {
   return await apiCall(`/api/courses/${courseId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -101,9 +105,44 @@ export async function updateSettings(settings: Partial<AppSettings>): Promise<Ap
   })
 }
 
+// ----- FAQs (via API) -----
+export async function fetchFaqs(): Promise<Faq[]> {
+  try {
+    const data = await apiCall("/api/faqs")
+    // Strip MongoDB internal fields from each FAQ
+    return data.map((f: any) => {
+      const { _id, __v, createdAt, updatedAt, ...clean } = f
+      return { ...clean, id: clean.faqId } as Faq
+    })
+  } catch {
+    return getFaqsFallback()
+  }
+}
+
+export async function createFaq(faq: Faq): Promise<Faq> {
+  return await apiCall("/api/faqs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(faq),
+  })
+}
+
+export async function updateFaq(faqId: string, faq: Partial<Faq>): Promise<Faq> {
+  return await apiCall(`/api/faqs/${faqId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(faq),
+  })
+}
+
+export async function deleteFaq(faqId: string): Promise<void> {
+  await apiCall(`/api/faqs/${faqId}`, { method: "DELETE" })
+}
+
 // ----- LocalStorage Fallbacks (for public-facing SSR-safe reads) -----
 const STORAGE_KEY_COURSES = "skillshq_courses"
 const STORAGE_KEY_SETTINGS = "skillshq_settings"
+const STORAGE_KEY_FAQS = "skillshq_faqs"
 
 function getCoursesFallback(): Course[] {
   if (typeof window === "undefined") return DEFAULT_COURSES
@@ -121,6 +160,15 @@ function getSettingsFallback(): AppSettings {
     if (raw) return JSON.parse(raw)
   } catch {}
   return DEFAULT_SETTINGS
+}
+
+function getFaqsFallback(): Faq[] {
+  if (typeof window === "undefined") return DEFAULT_FAQS
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_FAQS)
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return DEFAULT_FAQS
 }
 
 export function getCourses(): Course[] {
@@ -141,6 +189,15 @@ export function saveSettings(settings: AppSettings): void {
   localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings))
 }
 
+export function getFaqs(): Faq[] {
+  return getFaqsFallback()
+}
+
+export function saveFaqs(faqs: Faq[]): void {
+  if (typeof window === "undefined") return
+  localStorage.setItem(STORAGE_KEY_FAQS, JSON.stringify(faqs))
+}
+
 // ----- Auth -----
 export function isAdminLoggedIn(): boolean {
   if (typeof window === "undefined") return false
@@ -156,6 +213,7 @@ export function adminLogin(password: string): boolean {
 }
 
 export function adminLogout(): void {
+  if (typeof window === "undefined") return
   localStorage.removeItem(STORAGE_KEY_AUTH)
 }
 
@@ -185,8 +243,8 @@ export const FA_ICONS = [
   { value: "fa-star", label: "⭐ Star", color: "text-yellow-500", bg: "bg-yellow-50" },
 ]
 
-// ----- Default Data (Real Poster Data) -----
-const DEFAULT_COURSES: Course[] = [
+// ----- Default Data -----
+export const DEFAULT_COURSES: Course[] = [
   { id: "1", icon: "fa-robot", iconColor: "text-amber-500", bgColor: "bg-amber-50", title: "AI কনটেন্ট ক্রিয়েশন ওয়ার্কশপ ফুল কোর্স", desc: "এআই টুল দিয়ে প্রফেশনাল কনটেন্ট রাইটিং, ইমেজ ও ভিডিও ক্রিয়েশন শিখুন", regularPrice: "৳৮,০০০", offerPrice: "৳৪০০", highlight: false },
   { id: "2", icon: "fa-volume-high", iconColor: "text-sky-500", bgColor: "bg-sky-50", title: "IELTS (Spoken English) Course", desc: "ঘরে বসে ফ্লুয়েন্টলি ইংলিশ বলার কমপ্লিট গাইড ও প্র্যাকটিস মেটেরিয়ালস", regularPrice: "৳৫,০০০", offerPrice: "৳৩০০", highlight: false },
   { id: "3", icon: "fa-envelope", iconColor: "text-amber-500", bgColor: "bg-amber-50", title: "Email Marketing Blueprint", desc: "ক্লায়েন্ট হান্টিং ও লিড জেনারেশনের এডভান্সড ইমেইল মার্কেটিং স্ট্রাটেজি", regularPrice: "৳১,৫০০", offerPrice: "৳১০০", highlight: false },
@@ -197,6 +255,27 @@ const DEFAULT_COURSES: Course[] = [
   { id: "8", icon: "fa-globe", iconColor: "text-yellow-600", bgColor: "bg-yellow-50", title: "খালিদ ফারহানের SEO কোর্স", desc: "গুগলের প্রথম পেজে র‍্যাংক করার অ্যাডভান্সড SEO টেকনিকস ও স্ট্রাটেজি", regularPrice: "৳২৫,০০০", offerPrice: "৳৩৫০", highlight: false },
   { id: "9", icon: "fa-clapperboard", iconColor: "text-pink-500", bgColor: "bg-pink-50", title: "Video Content Reels Bundle", desc: "500+ Monkey Vlogging ও 23k+ রেডিমেড কন্টেন্ট বান্ডেল ফ্রি", regularPrice: "৳৫,০০০", offerPrice: "৳২৫০", highlight: false },
   { id: "10", icon: "fa-tools", iconColor: "text-amber-600", bgColor: "bg-amber-50", title: "Tools & Resources Premium Box", desc: "Capcut Pro, Surfshark VPN, Gemini Premium, Inshot Pro, Super VPN, App Clone ও আরও অনেক কিছু", regularPrice: "৳২,৫০০", offerPrice: "৳২০০", highlight: false },
+]
+
+export const DEFAULT_FAQS: Faq[] = [
+  {
+    faqId: "1",
+    question: "কোর্সগুলো কি লাইভ হবে নাকি প্রি-রেকর্ডেড?",
+    answer: "কোর্সগুলো সম্পূর্ণ প্রি-রেকর্ডেড প্রিমিয়াম ভিডিও মডিউল যা ড্রাইভে আপলোড করা আছে। ফলে আপনি আপনার সুবিধাজনক যেকোনো সময়ে ঘরে বসেই শিখতে পারবেন।",
+    order: 1,
+  },
+  {
+    faqId: "2",
+    question: "ক্যানভা প্রিমিয়াম প্রজেক্ট লিংক কিভাবে এক্টিভ করবো?",
+    answer: "অর্ডার সফল হওয়ার পরপরই ইমেইলে ড্রাইভ অ্যাক্সেস লিংকের সাথে একটি বিশেষ \"Canva Team Activation Link\" পাঠানো হবে। লিংকে ক্লিক করলেই আপনার সাধারণ ক্যানভা অ্যাকাউন্ট অটোমেটিক্যালি প্রিমিয়াম হয়ে যাবে।",
+    order: 2,
+  },
+  {
+    faqId: "3",
+    question: "ড্রাইভ লিংকের মেয়াদ কতদিন থাকবে?",
+    answer: "আপনার ড্রাইভ লিংকের অ্যাক্সেস থাকবে একদম লাইফটাইমের জন্য। কোনো রিনিউয়াল বা অতিরিক্ত চার্জ ছাড়াই আপনি আজীবন ফাইলগুলো ব্যবহার করতে পারবেন।",
+    order: 3,
+  },
 ]
 
 const DEFAULT_SETTINGS: AppSettings = {

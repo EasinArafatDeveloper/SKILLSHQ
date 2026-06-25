@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { connectDB } from "@/lib/mongodb"
 import { RegistrationModel } from "@/models/Registration"
 
+export const dynamic = "force-dynamic"
+
 // GET /api/dashboard — get user's private dashboard data (secure)
 export async function GET(req: NextRequest) {
   try {

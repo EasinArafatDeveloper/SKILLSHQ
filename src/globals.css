@@ -54,3 +54,43 @@ body {
     @apply px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300;
   }
 }
+
+/* Custom Red Cross-out Style */
+.cross-out-price {
+  position: relative;
+  display: inline-block;
+}
+.cross-out-price::before,
+.cross-out-price::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -6px;
+  right: -6px;
+  height: 3px;
+  background-color: #ef4444; /* red-500 */
+  border-radius: 9999px;
+  transform: translateY(-50%) rotate(8deg);
+}
+.cross-out-price::after {
+  transform: translateY(-50%) rotate(-8deg);
+}
+
+/* Animated Hand-Drawn Circle Effect */
+@keyframes drawCircle {
+  0% {
+    stroke-dashoffset: 400;
+  }
+  50% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+.animate-draw-circle {
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  animation: drawCircle 3s ease-in-out infinite;
+}
+

@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb"
 import { CourseModel } from "@/models/Course"
 import { SettingsModel } from "@/models/Settings"
 import { RegistrationModel } from "@/models/Registration"
+import { FaqModel } from "@/models/Faq"
 
 const REAL_COURSES = [
   { courseId: "1", icon: "fa-robot", iconColor: "text-amber-500", bgColor: "bg-amber-50", title: "AI কনটেন্ট ক্রিয়েশন ওয়ার্কশপ ফুল কোর্স", desc: "এআই টুল দিয়ে প্রফেশনাল কনটেন্ট রাইটিং, ইমেজ ও ভিডিও ক্রিয়েশন শিখুন", regularPrice: "৳৮,০০০", offerPrice: "৳৪০০", highlight: false, order: 1 },
@@ -17,6 +18,27 @@ const REAL_COURSES = [
   { courseId: "10", icon: "fa-tools", iconColor: "text-amber-600", bgColor: "bg-amber-50", title: "Tools & Resources Premium Box", desc: "Capcut Pro, Surfshark VPN, Gemini Premium, Inshot Pro, Super VPN, App Clone ও আরও অনেক কিছু", regularPrice: "৳২,৫০০", offerPrice: "৳২০০", highlight: false, order: 10 },
 ]
 
+const DEFAULT_FAQS = [
+  {
+    faqId: "1",
+    question: "কোর্সগুলো কি লাইভ হবে নাকি প্রি-রেকর্ডেড?",
+    answer: "কোর্সগুলো সম্পূর্ণ প্রি-রেকর্ডেড প্রিমিয়াম ভিডিও মডিউল যা ড্রাইভে আপলোড করা আছে। ফলে আপনি আপনার সুবিধাজনক যেকোনো সময়ে ঘরে বসেই শিখতে পারবেন।",
+    order: 1,
+  },
+  {
+    faqId: "2",
+    question: "ক্যানভা প্রিমিয়াম প্রজেক্ট লিংক কিভাবে এক্টিভ করবো?",
+    answer: "অর্ডার সফল হওয়ার পরপরই ইমেইলে ড্রাইভ অ্যাক্সেস লিংকের সাথে একটি বিশেষ \"Canva Team Activation Link\" পাঠানো হবে। লিংকে ক্লিক করলেই আপনার সাধারণ ক্যানভা অ্যাকাউন্ট অটোমেটিক্যালি প্রিমিয়াম হয়ে যাবে।",
+    order: 2,
+  },
+  {
+    faqId: "3",
+    question: "ড্রাইভ লিংকের মেয়াদ কতদিন থাকবে?",
+    answer: "আপনার ড্রাইভ লিংকের অ্যাক্সেস থাকবে একদম লাইফটাইমের জন্য। কোনো রিনিউয়াল বা অতিরিক্ত চার্জ ছাড়াই আপনি আজীবন ফাইলগুলো ব্যবহার করতে পারবেন।",
+    order: 3,
+  },
+]
+
 export async function POST() {
   try {
     await connectDB()
@@ -24,9 +46,13 @@ export async function POST() {
     // Clear old data
     await CourseModel.deleteMany({})
     await SettingsModel.deleteMany({})
+    await FaqModel.deleteMany({})
 
     // Insert real courses
     await CourseModel.insertMany(REAL_COURSES)
+
+    // Insert default FAQs
+    await FaqModel.insertMany(DEFAULT_FAQS)
 
     // Insert default settings
     await SettingsModel.create({
@@ -44,7 +70,7 @@ export async function POST() {
       telegramLink: "",
     })
 
-    return NextResponse.json({ success: true, message: "Database seeded with real poster data!" })
+    return NextResponse.json({ success: true, message: "Database seeded with real data, including courses, settings, and FAQs!" })
   } catch (err) {
     console.error("Seed error:", err)
     return NextResponse.json({ error: "Seed failed" }, { status: 500 })

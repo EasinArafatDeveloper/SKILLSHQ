@@ -4,12 +4,17 @@ import { useState, useEffect } from "react"
 import {
   Course,
   AppSettings,
+  Faq,
   fetchCourses,
   createCourse,
   updateCourse,
   deleteCourse,
   fetchSettings,
   updateSettings,
+  fetchFaqs,
+  createFaq,
+  updateFaq,
+  deleteFaq,
   adminLogin,
   adminLogout,
   isAdminLoggedIn,
@@ -17,6 +22,7 @@ import {
   FA_ICONS,
   saveCourses,
   saveSettings,
+  saveFaqs,
 } from "@/lib/store"
 import { showToast, showSuccess, showError, showConfirm } from "@/lib/notify"
 import Swal from "sweetalert2"
@@ -31,6 +37,8 @@ type NavItem =
   | "timer"
   | "tools"
   | "message"
+  | "faqs"
+  | "add-faq"
 
 const NAV_ITEMS: { id: NavItem; icon: string; label: string; section: string }[] = [
   { id: "courses", icon: "fa-list", label: "সব কোর্স", section: "কোর্স ম্যানেজমেন্ট" },
@@ -42,7 +50,10 @@ const NAV_ITEMS: { id: NavItem; icon: string; label: string; section: string }[]
   { id: "timer", icon: "fa-clock", label: "কাউন্টডাউন টাইমার", section: "অফার সেটিংস" },
   { id: "tools", icon: "fa-toolbox", label: "টুলস ও রিসোর্স", section: "অফার সেটিংস" },
   { id: "message", icon: "fa-message", label: "অফার মেসেজ", section: "অফার সেটিংস" },
+  { id: "faqs", icon: "fa-circle-question", label: "সব FAQ", section: "এফএকিউ ম্যানেজমেন্ট" },
+  { id: "add-faq", icon: "fa-plus-circle", label: "নতুন FAQ যোগ", section: "এফএকিউ ম্যানেজমেন্ট" },
 ]
+
 
 export default function AdminPage() {
   const [loggedIn, setLoggedIn] = useState(false)
@@ -62,6 +73,17 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [settingsSaving, setSettingsSaving] = useState(false)
+
+  // FAQ state
+  const [faqs, setFaqs] = useState<Faq[]>([])
+  const [editingFaq, setEditingFaq] = useState<Faq | null>(null)
+  const [editingFaqId, setEditingFaqId] = useState<string | null>(null)
+  const [newFaq, setNewFaq] = useState<Faq>({
+    question: "",
+    answer: "",
+    order: 0,
+  })
+
 
   // New course form state (for add-course tab)
   const defaultIcon = FA_ICONS[0]
@@ -94,18 +116,21 @@ export default function AdminPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [c, s, r] = await Promise.all([
+      const [c, s, r, f] = await Promise.all([
         fetchCourses(),
         fetchSettings(),
         fetch("/api/registrations").then(res => res.ok ? res.json() : []),
+        fetchFaqs(),
       ])
       const processed = c.map((x: Course) => ({ ...x, id: x.courseId || x.id }))
       setCourses(processed)
       setSettings(s)
       setRegistrations(Array.isArray(r) ? r : [])
+      setFaqs(f)
       // Sync to localStorage as cache for landing page fallback
       saveCourses(processed)
       saveSettings(s)
+      saveFaqs(f)
     } catch { /* fallback */ }
     finally { setLoading(false) }
   }
@@ -170,6 +195,50 @@ export default function AdminPage() {
       })
     } catch { showToast('ডিলিট করতে সমস্যা হয়েছে!', 'error') }
   }
+  const handleSaveFaqForm = async () => {
+    const target = editingFaqId ? editingFaq : newFaq
+    if (!target || !target.question || !target.answer) {
+      return showToast("প্রশ্ন এবং উত্তর উভয়ই প্রয়োজন!", "warning")
+    }
+    setSaving(true)
+    try {
+      if (editingFaqId) {
+        const updated = await updateFaq(editingFaqId, target!)
+        setFaqs(prev => {
+          const next = prev.map(f => f.faqId === editingFaqId ? updated : f)
+          saveFaqs(next)
+          return next
+        })
+      } else {
+        const created = await createFaq({ ...newFaq, faqId: generateId() })
+        setFaqs(prev => {
+          const next = [...prev, created]
+          saveFaqs(next)
+          return next
+        })
+        setNewFaq({ question: "", answer: "", order: faqs.length + 1 })
+      }
+      setEditingFaq(null)
+      setEditingFaqId(null)
+      setActiveNav("faqs")
+      showToast("FAQ সফলভাবে সংরক্ষিত হয়েছে!", "success")
+    } catch { showToast("সেভ করতে সমস্যা হয়েছে!", "error") }
+    finally { setSaving(false) }
+  }
+
+  const handleDeleteFaq = async (id: string) => {
+    const ok = await showConfirm("আপনি কি নিশ্চিত এই FAQ-টি ডিলিট করতে চান?")
+    if (!ok) return
+    try {
+      await deleteFaq(id)
+      setFaqs(prev => {
+        const next = prev.filter(f => f.faqId !== id)
+        saveFaqs(next)
+        return next
+      })
+      showToast("FAQ সফলভাবে ডিলিট করা হয়েছে!", "success")
+    } catch { showToast('ডিলিট করতে সমস্যা হয়েছে!', 'error') }
+  }
 
   // ---- LOGIN SCREEN ----
   if (authChecking) {
@@ -218,6 +287,8 @@ export default function AdminPage() {
       case "timer": return <TimerSettings />
       case "tools": return <ToolsSettings />
       case "message": return <MessageSettings />
+      case "faqs": return <FaqsList />
+      case "add-faq": return <FaqForm />
       default: return <CoursesList />
     }
   }
@@ -916,6 +987,181 @@ export default function AdminPage() {
     )
   }
 
+  // ---- FAQs List Component ----
+  function FaqsList() {
+    return (
+      <div className="space-y-5">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <h2 className="text-xl font-black text-slate-900">সব FAQ</h2>
+            <p className="text-xs text-slate-500 mt-0.5">সর্বমোট <span className="font-bold text-slate-700">{faqs.length}</span> টি জিজ্ঞাসিত প্রশ্ন</p>
+          </div>
+          <button onClick={() => { setEditingFaq(null); setEditingFaqId(null); setActiveNav("add-faq") }}
+            className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2.5 rounded-lg text-xs transition shadow flex items-center gap-1.5">
+            <i className="fa-solid fa-plus"></i> নতুন FAQ যোগ
+          </button>
+        </div>
+
+        {/* Desktop FAQ Table */}
+        <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase text-slate-500">
+                <th className="py-3 px-5 w-12">ক্র.নং</th>
+                <th className="py-3 px-5">প্রশ্ন</th>
+                <th className="py-3 px-5">উত্তর</th>
+                <th className="py-3 px-5 w-20">অর্ডার</th>
+                <th className="py-3 px-5 w-24 text-right">অ্যাকশন</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-xs">
+              {faqs.map((faq, index) => (
+                <tr key={faq.faqId || index} className="hover:bg-slate-50/50 transition">
+                  <td className="py-3.5 px-5 text-slate-400 font-medium">{index + 1}</td>
+                  <td className="py-3.5 px-5 font-bold text-slate-800">{faq.question}</td>
+                  <td className="py-3.5 px-5 text-slate-500 max-w-xs truncate" title={faq.answer}>{faq.answer}</td>
+                  <td className="py-3.5 px-5 text-slate-600 font-bold">{faq.order}</td>
+                  <td className="py-3.5 px-5 text-right space-x-2">
+                    <button onClick={() => { setEditingFaq(faq); setEditingFaqId(faq.faqId || null); setActiveNav("add-faq") }}
+                      className="p-1.5 bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-700 rounded-lg transition" title="সম্পাদনা">
+                      <i className="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button onClick={() => handleDeleteFaq(faq.faqId || "")}
+                      className="p-1.5 bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-700 rounded-lg transition" title="ডিলিট">
+                      <i className="fa-solid fa-trash-can"></i>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {faqs.length === 0 && (
+                <tr><td colSpan={5} className="p-8 text-center text-slate-400">কোনো FAQ পাওয়া যায়নি</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile View card layout */}
+        <div className="grid grid-cols-1 gap-4 md:hidden">
+          {faqs.map((faq, index) => (
+            <div key={faq.faqId || index} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
+              <div className="flex justify-between items-start">
+                <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full"># {index + 1}</span>
+                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">অর্ডার: {faq.order}</span>
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-slate-900 text-sm leading-snug">{faq.question}</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">{faq.answer}</p>
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button onClick={() => { setEditingFaq(faq); setEditingFaqId(faq.faqId || null); setActiveNav("add-faq") }}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                  <i className="fa-solid fa-pen-to-square"></i> সম্পাদনা
+                </button>
+                <button onClick={() => handleDeleteFaq(faq.faqId || "")}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-red-100 text-slate-700 hover:text-red-800 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                  <i className="fa-solid fa-trash-can"></i> ডিলিট
+                </button>
+              </div>
+            </div>
+          ))}
+          {faqs.length === 0 && (
+            <div className="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">কোনো FAQ পাওয়া যায়নি</div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ---- FAQ Form Component ----
+  function FaqForm() {
+    const isEdit = !!editingFaqId
+    const [form, setForm] = useState<Faq>({
+      question: "",
+      answer: "",
+      order: 0,
+    })
+
+    useEffect(() => {
+      if (isEdit && editingFaq) {
+        setForm(editingFaq)
+      } else {
+        setForm({
+          question: "",
+          answer: "",
+          order: faqs.length + 1,
+        })
+      }
+    }, [editingFaq, isEdit])
+
+    const save = async () => {
+      if (!form.question || !form.answer) {
+        return showToast("প্রশ্ন এবং উত্তর উভয়ই প্রয়োজন!", "warning")
+      }
+      setSaving(true)
+      try {
+        if (isEdit) {
+          const updated = await updateFaq(editingFaqId!, form)
+          setFaqs(prev => {
+            const next = prev.map(f => f.faqId === editingFaqId ? updated : f)
+            saveFaqs(next)
+            return next
+          })
+          showToast("FAQ সফলভাবে আপডেট করা হয়েছে!", "success")
+        } else {
+          const created = await createFaq({ ...form, faqId: generateId() })
+          setFaqs(prev => {
+            const next = [...prev, created]
+            saveFaqs(next)
+            return next
+          })
+          showToast("FAQ সফলভাবে যুক্ত করা হয়েছে!", "success")
+        }
+        setEditingFaq(null)
+        setEditingFaqId(null)
+        setActiveNav("faqs")
+      } catch {
+        showToast("FAQ সংরক্ষণ করতে সমস্যা হয়েছে!", "error")
+      } finally {
+        setSaving(false)
+      }
+    }
+
+    return (
+      <div className="max-w-2xl bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+          <h3 className="font-black text-slate-900 text-base">{isEdit ? "FAQ সম্পাদনা করুন" : "নতুন FAQ যোগ করুন"}</h3>
+          <p className="text-xs text-slate-500 mt-0.5">জিজ্ঞাসিত প্রশ্ন ও উত্তর কন্টেন্ট তৈরি করুন</p>
+        </div>
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">জিজ্ঞাসিত প্রশ্ন</label>
+            <input type="text" value={form.question} onChange={e => setForm({ ...form, question: e.target.value })}
+              className="w-full border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="যেমন: কোর্সগুলো কি লাইভ নাকি প্রি-রেকর্ডেড?" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">উত্তর</label>
+            <textarea rows={4} value={form.answer} onChange={e => setForm({ ...form, answer: e.target.value })}
+              className="w-full border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y" placeholder="বিস্তারিত উত্তর লিখুন..." />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">প্রদর্শনের ক্রম (Order)</label>
+            <input type="number" value={form.order} onChange={e => setForm({ ...form, order: parseInt(e.target.value) || 0 })}
+              className="w-full border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          </div>
+
+          <div className="flex gap-3 pt-2 border-t border-slate-100 mt-6">
+            <button onClick={() => { setActiveNav("faqs"); setEditingFaq(null); setEditingFaqId(null) }}
+              className="px-5 py-2.5 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition font-medium">বাতিল</button>
+            <button onClick={save} disabled={saving}
+              className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-sm rounded-lg transition shadow disabled:opacity-50 flex items-center gap-1.5">
+              {saving ? <><i className="fa-solid fa-spinner animate-spin"></i> সেভ হচ্ছে...</> : <><i className="fa-solid fa-check"></i> সেভ করুন</>}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // ---- Price Settings ----
   function PriceSettings() {
     if (!settings) return null
@@ -1357,6 +1603,20 @@ export default function AdminPage() {
           <div>
             {sidebarOpen && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">অফার সেটিংস</p>}
             {NAV_ITEMS.filter(n => n.section === "অফার সেটিংস").map(item => (
+              <button key={item.id} onClick={() => handleNavChange(item.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition mb-1 ${
+                  activeNav === item.id ? "bg-amber-50 text-amber-700 font-bold" : "text-slate-600 hover:bg-slate-100"
+                }`}>
+                <i className={`fa-solid ${item.icon} text-base w-5 text-center ${activeNav === item.id ? "text-amber-500" : "text-slate-400"}`}></i>
+                {sidebarOpen && <span>{item.label}</span>}
+              </button>
+            ))}
+          </div>
+
+          {/* Group: FAQ Management */}
+          <div>
+            {sidebarOpen && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">এফএকিউ ম্যানেজমেন্ট</p>}
+            {NAV_ITEMS.filter(n => n.section === "এফএকিউ ম্যানেজমেন্ট").map(item => (
               <button key={item.id} onClick={() => handleNavChange(item.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition mb-1 ${
                   activeNav === item.id ? "bg-amber-50 text-amber-700 font-bold" : "text-slate-600 hover:bg-slate-100"
