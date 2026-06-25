@@ -128,7 +128,13 @@ export default function CTA() {
                         <span className="text-[10px] text-emerald-700 font-bold">সবচেয়ে জনপ্রিয় চয়েস</span>
                       </div>
                     </div>
-                    <span className="text-sm font-extrabold text-emerald-600">{bundlePrice} BDT</span>
+                    <span className="text-sm font-extrabold text-emerald-600">
+                      {settings ? (
+                        `${settings.bundlePrice} BDT`
+                      ) : (
+                        <span className="inline-block h-4 w-16 bg-slate-200 animate-pulse rounded"></span>
+                      )}
+                    </span>
                   </div>
                   <p className="text-[10px] text-slate-400 text-center font-medium">সম্পূর্ণ বান্ডেল কিনলেই কেবল Canva Premium ফ্রি অফারটি প্রযোজ্য হবে।</p>
                 </div>
@@ -153,7 +159,13 @@ export default function CTA() {
                   </div>
                   <div className="border-t border-slate-100 pt-3 flex justify-between text-sm font-bold text-slate-900">
                     <span>পরিশোধযোগ্য মোট মূল্য:</span>
-                    <span className="text-lg text-emerald-600 font-black">{bundlePrice} BDT</span>
+                    <span className="text-lg text-emerald-600 font-black h-[28px] flex items-center">
+                      {settings ? (
+                        `${settings.bundlePrice} BDT`
+                      ) : (
+                        <span className="inline-block h-5 w-20 bg-slate-200 animate-pulse rounded"></span>
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>

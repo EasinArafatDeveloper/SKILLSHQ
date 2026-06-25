@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Swal from "sweetalert2"
+import { fetchSettings, AppSettings } from "@/lib/store"
 
 interface PrivateLink {
   courseTitle: string
@@ -35,11 +36,13 @@ export default function DashboardPage() {
   const [loginError, setLoginError] = useState("")
   const [checkingAuth, setCheckingAuth] = useState(true)
 
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+
   useEffect(() => {
     let cancelled = false
     async function init() {
       try {
-        const res = await fetch("/api/auth/me")
+        const res = await fetch("/api/auth/me", { cache: "no-store" })
         if (!cancelled && res.ok) {
           const user = await res.json()
           if (user.loggedIn) {
@@ -54,6 +57,11 @@ export default function DashboardPage() {
       }
     }
     init()
+
+    fetchSettings().then(s => {
+      if (!cancelled) setSettings(s)
+    }).catch(() => {})
+
     return () => { cancelled = true }
   }, [])
 
@@ -226,6 +234,20 @@ export default function DashboardPage() {
         </nav>
 
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+          {/* Global Dashboard Notice */}
+          {settings?.dashboardNotice && (
+            <div className="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-200 rounded-2xl p-5 flex gap-3.5 shadow-sm relative overflow-hidden animate-fade-in">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl pointer-events-none"></div>
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0 text-amber-600">
+                <i className="fa-solid fa-bullhorn text-lg"></i>
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-slate-900 text-sm">গুরুত্বপূর্ণ নোটিশ / ঘোষণা</h4>
+                <p className="text-xs text-slate-600 leading-relaxed font-medium whitespace-pre-line">{settings.dashboardNotice}</p>
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <h2 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
               <i className="fa-solid fa-user text-amber-500"></i> আপনার তথ্য

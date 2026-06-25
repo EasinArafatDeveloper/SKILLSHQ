@@ -219,8 +219,12 @@ function CheckoutForm() {
                 onClick={() => setPaymentMethod("bkash")}
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-pink-600 flex items-center justify-center text-white font-extrabold text-sm">
-                    bK
+                  <div className="w-10 h-10 rounded-lg bg-pink-50 border border-pink-100 flex items-center justify-center p-1 overflow-hidden">
+                    <img
+                      src="https://www.logo.wine/a/logo/BKash/BKash-Logo.wine.svg"
+                      alt="bKash"
+                      className="w-full h-full object-contain scale-125"
+                    />
                   </div>
                   <div>
                     <span className="block text-sm font-bold text-slate-900">bKash</span>
@@ -262,8 +266,12 @@ function CheckoutForm() {
                 onClick={() => setPaymentMethod("nagad")}
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white font-extrabold text-sm">
-                    N
+                  <div className="w-10 h-10 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center p-0.5 overflow-hidden">
+                    <img
+                      src="https://www.logo.wine/a/logo/Nagad/Nagad-Logo.wine.svg"
+                      alt="Nagad"
+                      className="w-full h-full object-contain scale-125"
+                    />
                   </div>
                   <div>
                     <span className="block text-sm font-bold text-slate-900">Nagad</span>
@@ -299,7 +307,13 @@ function CheckoutForm() {
             <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg flex items-start gap-2">
               <i className="fa-solid fa-circle-info text-amber-600 mt-0.5"></i>
               <p className="text-[11px] text-amber-800 font-medium">
-                উপরের bKash অথবা Nagad নাম্বারে <strong>{bundlePrice}</strong> টাকা Send Money করুন। তারপর নিচে ট্রানজেকশন আইডি ও স্ক্রিনশট দিন।
+                উপরের bKash অথবা Nagad নাম্বারে <strong>
+                  {settings ? (
+                    bundlePrice
+                  ) : (
+                    <span className="inline-block h-3.5 w-10 bg-amber-200/50 animate-pulse rounded"></span>
+                  )}
+                </strong> টাকা Send Money করুন। তারপর নিচে ট্রানজেকশন আইডি ও স্ক্রিনশট দিন।
               </p>
             </div>
           </div>
@@ -382,7 +396,13 @@ function CheckoutForm() {
               </div>
               <div className="border-t border-slate-100 pt-3 flex justify-between text-base font-bold text-slate-900">
                 <span>পরিশোধযোগ্য মূল্য:</span>
-                <span className="text-emerald-600 text-lg font-black">{bundlePrice} BDT</span>
+                <span className="text-emerald-600 text-lg font-black h-[28px] flex items-center">
+                  {settings ? (
+                    `${bundlePrice} BDT`
+                  ) : (
+                    <span className="inline-block h-5 w-20 bg-slate-200 animate-pulse rounded"></span>
+                  )}
+                </span>
               </div>
             </div>
           </div>

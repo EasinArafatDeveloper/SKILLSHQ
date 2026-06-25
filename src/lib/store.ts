@@ -27,6 +27,7 @@ export interface AppSettings {
   whatsappNumber: string
   telegramLink: string
   topRibbonText: string
+  dashboardNotice?: string
 }
 
 export interface Faq {
@@ -43,7 +44,15 @@ const STORAGE_KEY_AUTH = "skillshq_admin_auth"
 // ----- API Helpers -----
 async function apiCall(path: string, options?: RequestInit) {
   try {
-    const res = await fetch(path, options)
+    const res = await fetch(path, {
+      ...options,
+      cache: "no-store",
+      headers: {
+        ...options?.headers,
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+      },
+    })
     if (!res.ok) throw new Error(`API error: ${res.status}`)
     return await res.json()
   } catch (err) {
@@ -292,4 +301,5 @@ const DEFAULT_SETTINGS: AppSettings = {
   whatsappNumber: "",
   telegramLink: "",
   topRibbonText: "বিশেষ মেগা অফার: আজ রাত ১২টা পর্যন্ত সব কোর্স এবং Canva Premium একদম ফ্রি!",
+  dashboardNotice: "",
 }

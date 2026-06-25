@@ -14,6 +14,7 @@ export interface ISettings extends Document {
   whatsappNumber: string
   telegramLink: string
   topRibbonText: string
+  dashboardNotice: string
   updatedAt: Date
 }
 
@@ -32,6 +33,7 @@ const SettingsSchema = new Schema<ISettings>(
     whatsappNumber: { type: String, default: "" },
     telegramLink: { type: String, default: "" },
     topRibbonText: { type: String, default: "বিশেষ মেগা অফার: আজ রাত ১২টা পর্যন্ত সব কোর্স এবং Canva Premium একদম ফ্রি!" },
+    dashboardNotice: { type: String, default: "" },
   },
   { timestamps: true }
 )

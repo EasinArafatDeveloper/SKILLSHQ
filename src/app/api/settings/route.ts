@@ -12,7 +12,11 @@ export async function GET() {
     if (!settings) {
       settings = await SettingsModel.create({ key: "main" })
     }
-    return NextResponse.json(settings)
+    return NextResponse.json(settings, {
+      headers: {
+        "Cache-Control": "no-store, max-age=0, must-revalidate",
+      },
+    })
   } catch (err) {
     console.error("GET /api/settings error:", err)
     return NextResponse.json({ error: "Failed to fetch" }, { status: 500 })

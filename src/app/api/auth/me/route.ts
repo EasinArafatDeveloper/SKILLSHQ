@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { connectDB } from "@/lib/mongodb"
 import { RegistrationModel } from "@/models/Registration"
 
+export const dynamic = "force-dynamic"
+
 // GET /api/auth/me — get current user + dashboard data by cookie token
 export async function GET(req: NextRequest) {
   try {
@@ -9,12 +11,18 @@ export async function GET(req: NextRequest) {
     const token = req.cookies.get("shq_auth")?.value
 
     if (!token) {
-      return NextResponse.json({ loggedIn: false }, { status: 401 })
+      return NextResponse.json({ loggedIn: false }, {
+        status: 401,
+        headers: { "Cache-Control": "no-store, max-age=0, must-revalidate" }
+      })
     }
 
     const user = await RegistrationModel.findOne({ authToken: token }).select("-authToken -screenshot")
     if (!user) {
-      const res = NextResponse.json({ loggedIn: false }, { status: 401 })
+      const res = NextResponse.json({ loggedIn: false }, {
+        status: 401,
+        headers: { "Cache-Control": "no-store, max-age=0, must-revalidate" }
+      })
       res.cookies.set("shq_auth", "", { maxAge: 0, path: "/" })
       return res
     }
@@ -36,10 +44,17 @@ export async function GET(req: NextRequest) {
       telegramLink: isCompleted ? user.telegramLink : "",
       telegramClicked: isCompleted ? user.telegramClicked : false,
       isCompleted,
+    }, {
+      headers: {
+        "Cache-Control": "no-store, max-age=0, must-revalidate",
+      }
     })
   } catch (err) {
     console.error("GET /api/auth/me error:", err)
-    return NextResponse.json({ error: "Failed" }, { status: 500 })
+    return NextResponse.json({ error: "Failed" }, {
+      status: 500,
+      headers: { "Cache-Control": "no-store, max-age=0, must-revalidate" }
+    })
   }
 }
 

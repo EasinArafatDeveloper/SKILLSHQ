@@ -10,7 +10,7 @@ export default function Header() {
   useEffect(() => {
     async function check() {
       try {
-        const res = await fetch("/api/auth/me")
+        const res = await fetch("/api/auth/me", { cache: "no-store" })
         if (res.ok) {
           const data = await res.json()
           if (data.loggedIn) setIsLoggedIn(true)
@@ -29,10 +29,14 @@ export default function Header() {
       <div className="fixed bottom-4 right-4 left-4 z-50 md:hidden">
         <a
           href="#checkout-section"
-          className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center font-bold py-3.5 rounded-xl shadow-2xl flex items-center justify-center gap-2 animate-bounce border border-white/20"
+          className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center font-bold py-3.5 rounded-xl shadow-2xl flex items-center justify-center gap-2 animate-bounce border border-white/20 h-[54px]"
         >
           <i className="fa-solid fa-shopping-cart text-lg"></i>
-          <span>অর্ডার করুন ({bundlePrice})</span>
+          {settings ? (
+            <span>অর্ডার করুন ({settings.bundlePrice})</span>
+          ) : (
+            <span className="inline-block h-4 w-24 bg-white/25 animate-pulse rounded"></span>
+          )}
         </a>
       </div>
 

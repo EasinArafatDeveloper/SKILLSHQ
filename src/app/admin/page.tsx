@@ -33,6 +33,7 @@ type NavItem =
   | "registrations"
   | "video"
   | "contact"
+  | "notice"
   | "price"
   | "timer"
   | "tools"
@@ -46,6 +47,7 @@ const NAV_ITEMS: { id: NavItem; icon: string; label: string; section: string }[]
   { id: "registrations", icon: "fa-users", label: "রেজিস্ট্রেশন লিস্ট", section: "অর্ডার ম্যানেজমেন্ট" },
   { id: "video", icon: "fa-circle-play", label: "ভিডিও সেটিংস", section: "কন্টেন্ট ম্যানেজমেন্ট" },
   { id: "contact", icon: "fa-phone", label: "কন্টাক্ট সেটিংস", section: "কন্টেন্ট ম্যানেজমেন্ট" },
+  { id: "notice", icon: "fa-bullhorn", label: "ড্যাশবোর্ড নোটিশ", section: "কন্টেন্ট ম্যানেজমেন্ট" },
   { id: "price", icon: "fa-tag", label: "বান্ডেল প্রাইস", section: "অফার সেটিংস" },
   { id: "timer", icon: "fa-clock", label: "কাউন্টডাউন টাইমার", section: "অফার সেটিংস" },
   { id: "tools", icon: "fa-toolbox", label: "টুলস ও রিসোর্স", section: "অফার সেটিংস" },
@@ -119,7 +121,7 @@ export default function AdminPage() {
       const [c, s, r, f] = await Promise.all([
         fetchCourses(),
         fetchSettings(),
-        fetch("/api/registrations").then(res => res.ok ? res.json() : []),
+        fetch("/api/registrations", { cache: "no-store" }).then(res => res.ok ? res.json() : []),
         fetchFaqs(),
       ])
       const processed = c.map((x: Course) => ({ ...x, id: x.courseId || x.id }))
@@ -279,10 +281,11 @@ export default function AdminPage() {
   const renderContent = () => {
     switch (activeNav) {
       case "courses": return <CoursesList />
-      case "add-course": return <CourseForm />
+      case "add-course": return CourseForm()
       case "registrations": return <RegistrationsList />
       case "video": return <VideoSettings />
       case "contact": return <ContactSettings />
+      case "notice": return <NoticeSettings />
       case "price": return <PriceSettings />
       case "timer": return <TimerSettings />
       case "tools": return <ToolsSettings />
@@ -390,7 +393,19 @@ export default function AdminPage() {
     const totalReg = registrations.length
     const completedReg = registrations.filter((r: any) => r.status === "completed").length
     const pendingReg = registrations.filter((r: any) => r.status === "pending").length
-    const totalAmount = registrations.reduce((sum: number, r: any) => sum + (r.status === "completed" ? 650 : 0), 0)
+
+    const parsePrice = (priceStr: string) => {
+      if (!priceStr) return 0
+      const bengaliToEnglish: Record<string, string> = {
+        '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+        '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+      }
+      let cleaned = priceStr.split('').map(char => bengaliToEnglish[char] || char).join('')
+      cleaned = cleaned.replace(/[^0-9.]/g, '')
+      const parsed = parseFloat(cleaned)
+      return isNaN(parsed) ? 0 : parsed
+    }
+    const totalAmount = registrations.reduce((sum: number, r: any) => sum + (r.status === "completed" ? parsePrice(r.amount) : 0), 0)
 
     // State for managing private links
     const [expandedReg, setExpandedReg] = useState<string | null>(null)
@@ -1157,6 +1172,48 @@ export default function AdminPage() {
               {saving ? <><i className="fa-solid fa-spinner animate-spin"></i> সেভ হচ্ছে...</> : <><i className="fa-solid fa-check"></i> সেভ করুন</>}
             </button>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ---- Notice Settings ----
+  function NoticeSettings() {
+    if (!settings) return null
+    const [draft, setDraft] = useState<AppSettings | null>(null)
+    useEffect(() => { setDraft(settings) }, [settings])
+    if (!draft) return null
+    const save = async () => {
+      setSettingsSaving(true)
+      try {
+        await updateSettings(draft)
+        setSettings(draft)
+        saveSettings(draft)
+        showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success')
+      } catch {
+        showToast('সেটিংস সেভ করতে সমস্যা হয়েছে!', 'error')
+      } finally {
+        setSettingsSaving(false)
+      }
+    }
+    return (
+      <div className="space-y-5 max-w-2xl">
+        <div>
+          <h2 className="text-xl font-black text-slate-900">ইউজার ড্যাশবোর্ড নোটিশ সেটিংস</h2>
+          <p className="text-xs text-slate-500 mt-0.5">সব ইউজারের ড্যাশবোর্ডে প্রদর্শিত নোটিশ কন্টেন্ট কনফিগার করুন</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">নোটিশ মেসেজ (Notice Message)</label>
+            <textarea rows={4} value={draft.dashboardNotice || ""}
+              onChange={e => setDraft({ ...draft, dashboardNotice: e.target.value })}
+              className="w-full border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y"
+              placeholder="যেমন: আমাদের নতুন ফেসবুক গ্রুপে যুক্ত হোন..." />
+          </div>
+          <button onClick={save} disabled={settingsSaving}
+            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-2.5 rounded-lg text-sm transition shadow disabled:opacity-50">
+            {settingsSaving ? "সেভ হচ্ছে..." : "নোটিশ সেভ করুন"}
+          </button>
         </div>
       </div>
     )

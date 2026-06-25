@@ -4,12 +4,18 @@ import { RegistrationModel } from "@/models/Registration"
 import { sendOrderConfirmationEmail } from "@/lib/email"
 import crypto from "crypto"
 
+export const dynamic = "force-dynamic"
+
 // GET — all registrations
 export async function GET() {
   try {
     await connectDB()
     const registrations = await RegistrationModel.find().sort({ createdAt: -1 })
-    return NextResponse.json(registrations)
+    return NextResponse.json(registrations, {
+      headers: {
+        "Cache-Control": "no-store, max-age=0, must-revalidate",
+      },
+    })
   } catch (err) {
     console.error("GET /api/registrations error:", err)
     return NextResponse.json({ error: "Failed to fetch" }, { status: 500 })

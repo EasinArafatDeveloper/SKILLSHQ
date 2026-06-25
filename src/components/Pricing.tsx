@@ -62,8 +62,14 @@ export default function Pricing() {
           <h3 className="text-3xl md:text-5xl font-black text-slate-900">
             Canva Premium <span className="text-gradient-canva">একদম ফ্রি!</span>
           </h3>
-          <p className="text-sm md:text-base text-slate-600 max-w-xl mx-auto font-medium">
-            আমাদের বিশেষ &quot;{settings?.bundlePrice || "৳৬৫০"} অল-ইন-ওয়ান&quot; প্যাকেজটি অর্ডার করলে আপনি সম্পূর্ণ লাইফটাইমের জন্য ক্যানভা প্রিমিয়াম একাউন্ট পাবেন কোনো অতিরিক্ত ফি ছাড়াই!
+          <p className="text-sm md:text-base text-slate-600 max-w-xl mx-auto font-medium flex items-center justify-center flex-wrap gap-1.5 min-h-[48px]">
+            আমাদের বিশেষ &quot;
+            {settings ? (
+              <span className="font-extrabold text-amber-600">{settings.bundlePrice}</span>
+            ) : (
+              <span className="inline-block h-4 w-12 bg-slate-200 animate-pulse rounded"></span>
+            )}
+            &quot; প্যাকেজটি অর্ডার করলে আপনি সম্পূর্ণ লাইফটাইমের জন্য ক্যানভা প্রিমিয়াম একাউন্ট পাবেন কোনো অতিরিক্ত ফি ছাড়াই!
           </p>
         </div>
 

@@ -156,18 +156,22 @@ export default function Courses() {
             <span className="text-slate-400 line-through font-bold">{bundleRegularPrice}+ BDT</span>
           </p>
           {/* Individual Offer Sum (calculated) */}
-          <p className="text-xs md:text-sm text-slate-600 font-medium flex items-center justify-center gap-1.5 flex-wrap">
-            <span>আলাদা আলাদা অফার কিনলে</span>
-            <span className="cross-out-price text-slate-700 font-black px-1.5 text-sm md:text-base">
+          <div className="text-sm md:text-base text-slate-600 font-bold flex flex-col sm:flex-row items-center justify-center gap-2 pt-1 pb-1">
+            <span>আলাদা আলাদা অফার কিনলে:</span>
+            <span className="cross-out-price text-slate-800 font-black px-3 text-3xl md:text-4xl leading-none">
               {totalOfferSum} BDT
             </span>
-          </p>
+          </div>
           {/* Mega Bundle Offer (RED) */}
           <div className="flex flex-col md:flex-row justify-center items-center gap-3 pt-3 pb-2">
             <span className="text-xl md:text-2xl font-black text-slate-800">আজকের অল-ইন-ওয়ান মেগা অফার:</span>
             <span className="relative inline-block px-6 py-2.5">
-              <span className="relative z-10 text-3xl md:text-4xl font-black text-red-500 animate-pulse block">
-                মাত্র {bundlePrice} BDT!
+              <span className="relative z-10 text-3xl md:text-4xl font-black text-red-500 block h-[40px] flex items-center justify-center">
+                {settings ? (
+                  <span className="animate-pulse">মাত্র {settings.bundlePrice} BDT!</span>
+                ) : (
+                  <span className="inline-block h-8 w-44 bg-slate-200 animate-pulse rounded"></span>
+                )}
               </span>
               <svg className="absolute inset-0 w-[108%] h-[112%] -left-[4%] -top-[6%] pointer-events-none overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path
