@@ -920,7 +920,7 @@ export default function AdminPage() {
   function PriceSettings() {
     if (!settings) return null
     const [draft, setDraft] = useState<AppSettings | null>(null)
-    useEffect(() => { setDraft(settings) }, [settings?.bundlePrice, settings?.bundleRegularPrice])
+    useEffect(() => { setDraft(settings) }, [settings])
     if (!draft) return null
     const save = async () => {
       setSettingsSaving(true)
@@ -965,7 +965,7 @@ export default function AdminPage() {
   function TimerSettings() {
     if (!settings) return null
     const [draft, setDraft] = useState<AppSettings | null>(null)
-    useEffect(() => { setDraft(settings) }, [settings?.countdownMinutes, settings?.countdownSeconds])
+    useEffect(() => { setDraft(settings) }, [settings])
     if (!draft) return null
     const save = async () => {
       setSettingsSaving(true)

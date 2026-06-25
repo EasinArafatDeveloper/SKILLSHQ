@@ -19,14 +19,19 @@ if (!global.mongooseCache) {
 }
 
 export async function connectDB(): Promise<typeof mongoose> {
-  if (cached.conn) return cached.conn
+  if (cached.conn && mongoose.connection.readyState === 1) return cached.conn
 
   if (!cached.promise) {
     cached.promise = mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
-    })
+    }).then((m) => m)
   }
 
-  cached.conn = await cached.promise
+  try {
+    cached.conn = await cached.promise
+  } catch (err) {
+    cached.promise = null
+    throw err
+  }
   return cached.conn
 }
