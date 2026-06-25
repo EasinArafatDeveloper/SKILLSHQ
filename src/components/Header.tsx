@@ -39,7 +39,7 @@ export default function Header() {
       {/* Header Alert Ribbon */}
       <div className="bg-gradient-to-r from-red-600 via-amber-500 to-red-600 text-white font-bold text-center py-2.5 px-4 text-xs md:text-sm tracking-wide shadow-md">
         <i className="fa-solid fa-triangle-exclamation mr-1.5 animate-pulse"></i>
-        বিশেষ মেগা অফার: আজ রাত ১২টা পর্যন্ত সব কোর্স এবং Canva Premium একদম ফ্রি!
+        {settings?.topRibbonText || "বিশেষ মেগা অফার: আজ রাত ১২টা পর্যন্ত সব কোর্স এবং Canva Premium একদম ফ্রি!"}
       </div>
 
       {/* Main Navigation/Brand Hero */}

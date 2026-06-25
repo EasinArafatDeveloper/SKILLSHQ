@@ -68,6 +68,7 @@ export async function POST() {
       videoThumbnail: "",
       whatsappNumber: "",
       telegramLink: "",
+      topRibbonText: "বিশেষ মেগা অফার: আজ রাত ১২টা পর্যন্ত সব কোর্স এবং Canva Premium একদম ফ্রি!",
     })
 
     return NextResponse.json({ success: true, message: "Database seeded with real data, including courses, settings, and FAQs!" })

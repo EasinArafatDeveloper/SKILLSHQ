@@ -1287,25 +1287,78 @@ export default function AdminPage() {
   // ---- Message Settings ----
   function MessageSettings() {
     if (!settings) return null
-    const [draft, setDraft] = useState({ val: "" })
-    useEffect(() => { setDraft({ val: settings.offerEndMessage || "" }) }, [settings?.offerEndMessage])
+    const [draft, setDraft] = useState({ ribbonText: "", endMessage: "" })
+    useEffect(() => {
+      setDraft({
+        ribbonText: settings.topRibbonText || "",
+        endMessage: settings.offerEndMessage || ""
+      })
+    }, [settings?.topRibbonText, settings?.offerEndMessage])
+
     const save = async () => {
-      const updated = { ...settings, offerEndMessage: draft.val }
+      const updated = { ...settings, topRibbonText: draft.ribbonText, offerEndMessage: draft.endMessage }
       setSettingsSaving(true)
-      try { await updateSettings(updated); setSettings(updated); saveSettings(updated); showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success') }
-      catch { showToast('সেটিংস সেভ করতে সমস্যা হয়েছে!', 'error') }
-      finally { setSettingsSaving(false) }
+      try {
+        await updateSettings(updated)
+        setSettings(updated)
+        saveSettings(updated)
+        showToast('সেটিংস সফলভাবে সেভ হয়েছে!', 'success')
+      }
+      catch {
+        showToast('সেটিংস সেভ করতে সমস্যা হয়েছে!', 'error')
+      }
+      finally {
+        setSettingsSaving(false)
+      }
     }
+
     return (
       <div className="space-y-5 max-w-2xl">
-        <div><h2 className="text-xl font-black text-slate-900">অফার শেষ মেসেজ</h2><p className="text-xs text-slate-500 mt-0.5">কাউন্টডাউন শেষ হলে কী মেসেজ দেখাবে</p></div>
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
-          <input type="text" value={draft.val} onChange={e => setDraft({ val: e.target.value })}
-            className="w-full border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-          <div className="bg-red-50 rounded-lg p-4 text-center"><span className="text-xs text-red-600">প্রিভিউ: </span><span className="text-sm font-bold text-red-700">{draft.val}</span></div>
+        <div>
+          <h2 className="text-xl font-black text-slate-900">অফার মেসেজ সেটিংস</h2>
+          <p className="text-xs text-slate-500 mt-0.5">অ্যানাউন্সমেন্ট রিবন এবং অফার শেষের মেসেজ পরিবর্তন করুন</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-5">
+          {/* Top Announcement Ribbon Text */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700">হেডার অ্যানাউন্সমেন্ট রিবন টেক্সট</label>
+            <input
+              type="text"
+              value={draft.ribbonText}
+              onChange={e => setDraft({ ...draft, ribbonText: e.target.value })}
+              className="w-full border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              placeholder="যেমন: বিশেষ মেগা অফার: আজ রাত ১২টা পর্যন্ত সব কোর্স এবং Canva Premium একদম ফ্রি!"
+            />
+            {draft.ribbonText && (
+              <div className="bg-gradient-to-r from-red-600 via-amber-500 to-red-600 text-white font-bold text-center py-2 px-3 rounded-lg text-xs mt-2 shadow-sm flex items-center justify-center gap-1.5">
+                <i className="fa-solid fa-triangle-exclamation animate-pulse"></i>
+                {draft.ribbonText}
+              </div>
+            )}
+          </div>
+
+          <hr className="border-slate-100" />
+
+          {/* Offer End Message */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700">কাউন্টডাউন শেষ হলে মেসেজ (Offer End Message)</label>
+            <input
+              type="text"
+              value={draft.endMessage}
+              onChange={e => setDraft({ ...draft, endMessage: e.target.value })}
+              className="w-full border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+            {draft.endMessage && (
+              <div className="bg-red-50 rounded-lg p-3 text-center border border-red-100 mt-2">
+                <span className="text-[10px] text-red-600 font-bold uppercase block mb-0.5">প্রিভিউ:</span>
+                <span className="text-xs font-bold text-red-700">{draft.endMessage}</span>
+              </div>
+            )}
+          </div>
+
           <button onClick={save} disabled={settingsSaving}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-2.5 rounded-lg text-sm transition shadow disabled:opacity-50">
-            {settingsSaving ? "সেভ হচ্ছে..." : "সেটিংস সেভ করুন"}
+            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-2.5 rounded-lg text-sm transition shadow disabled:opacity-50 mt-4">
+            {settingsSaving ? "সেভ হচ্ছে..." : "মেসেজ সেটিংস সেভ করুন"}
           </button>
         </div>
       </div>

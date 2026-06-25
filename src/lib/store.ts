@@ -26,6 +26,7 @@ export interface AppSettings {
   videoThumbnail: string
   whatsappNumber: string
   telegramLink: string
+  topRibbonText: string
 }
 
 export interface Faq {
@@ -290,4 +291,5 @@ const DEFAULT_SETTINGS: AppSettings = {
   videoThumbnail: "",
   whatsappNumber: "",
   telegramLink: "",
+  topRibbonText: "বিশেষ মেগা অফার: আজ রাত ১২টা পর্যন্ত সব কোর্স এবং Canva Premium একদম ফ্রি!",
 }
