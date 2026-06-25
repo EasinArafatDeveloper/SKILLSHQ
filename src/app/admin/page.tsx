@@ -1333,12 +1333,28 @@ export default function AdminPage() {
       return null
     }
 
+    const handleThumbUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      if (file.size > 3 * 1024 * 1024) {
+        showToast("সর্বোচ্চ 3MB সাইজের ছবি আপলোড করতে পারবেন।", "warning")
+        return
+      }
+      const reader = new FileReader()
+      reader.onload = () => {
+        setDraft(prev => ({ ...prev, thumb: (reader.result as string) || "" }))
+        showToast("থাম্বনেইল ইমেজ সফলভাবে আপলোড হয়েছে!", "success")
+      }
+      reader.readAsDataURL(file)
+    }
+
     const ytId = extractYoutubeId(draft.url)
     const autoThumb = ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : ""
     const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}` : ""
     // Use manual thumb, or auto, or fallback to hqdefault
     const finalThumb = draft.thumb || autoThumb || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : "")
     const hasThumb = finalThumb.length > 5
+    const isCustom = draft.thumb && draft.thumb !== autoThumb && !draft.thumb.includes("youtube.com/vi/") && !draft.thumb.includes("ytimg.com/")
 
     // Show thumbnail in a modal
     const viewThumb = () => {
@@ -1391,16 +1407,52 @@ export default function AdminPage() {
               className="w-full border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             {ytId && (
               <p className="text-[10px] text-emerald-600 mt-1 flex items-center gap-1">
-                <i className="fa-brands fa-youtube"></i> YouTube ভিডিও ডিটেক্ট হয়েছে — সেভ করলেই থাম্বনেইল অটো সেভ হবে
+                <i className="fa-brands fa-youtube"></i> YouTube ভিডিও ডিটেক্ট হয়েছে
               </p>
             )}
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+              <span>কাস্টম থাম্বনেইল ইমেজ URL / আপলোড করুন (ঐচ্ছিক)</span>
+              {draft.thumb && (
+                <button
+                  type="button"
+                  onClick={() => setDraft({ ...draft, thumb: "" })}
+                  className="text-[10px] text-red-500 hover:underline font-normal"
+                >
+                  রিমুভ করুন (ইউটিউব থাম্বনেইলে ফেরত যান)
+                </button>
+              )}
+            </label>
+            <div className="flex gap-2">
+              <input type="text" value={draft.thumb}
+                onChange={e => setDraft({ ...draft, thumb: e.target.value })}
+                placeholder="ইমেজ লিংক (URL) দিন অথবা ফাইল আপলোড করুন..."
+                className="flex-1 border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-xs" />
+              <label className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5 flex-shrink-0">
+                <i className="fa-solid fa-cloud-arrow-up"></i> আপলোড
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleThumbUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">
+              ইউটিউব থেকে অটো থাম্বনেইল পেতে চাইলে এই বক্সটি খালি রাখুন।
+            </p>
           </div>
 
           {/* Thumbnail Preview */}
           {hasThumb && (
             <div className="space-y-2">
               <label className="block text-xs font-bold text-slate-700">
-                থাম্বনেইল {ytId && !draft.thumb ? <span className="text-emerald-600 font-normal">(YouTube থেকে অটো)</span> : ""}
+                থাম্বনেইল {ytId && !isCustom ? (
+                  <span className="text-emerald-600 font-normal">(YouTube থেকে অটো)</span>
+                ) : isCustom ? (
+                  <span className="text-amber-600 font-normal">(কাস্টম থাম্বনেইল সক্রিয়)</span>
+                ) : null}
               </label>
               <div className="relative rounded-xl overflow-hidden border border-slate-200 cursor-pointer group" onClick={viewThumb}>
                 <img
